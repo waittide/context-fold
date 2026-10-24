@@ -25,7 +25,12 @@ const PREAMBLE = [
 
 /** Assemble the handoff seed (pure). The parent session file is the seed's ground truth: fold
  *  codes in the body resolve against THAT ledger, not the new session's. */
-export function buildHandoffSeed(opts: { goal: string; indexBody: string; at: string; parentSessionPath?: string }): string {
+export function buildHandoffSeed(opts: {
+	goal: string;
+	indexBody: string;
+	at: string;
+	parentSessionPath?: string;
+}): string {
 	return [
 		`# Session handoff seed — ${opts.at}`,
 		...(opts.parentSessionPath ? [`Parent session: ${opts.parentSessionPath}`] : []),
@@ -115,7 +120,10 @@ export function registerHandoffCommand(
 							});
 							// Successful replacement invalidates the original ctx, including its UI.
 							if (!result.cancelled) return;
-							notify("replacement session was cancelled by another extension — falling back to the manual flow", "warning");
+							notify(
+								"replacement session was cancelled by another extension — falling back to the manual flow",
+								"warning",
+							);
 						} catch (err) {
 							notify(
 								`starting the replacement session failed (${err instanceof Error ? err.message : String(err)}) — falling back to the manual flow`,
@@ -124,7 +132,10 @@ export function registerHandoffCommand(
 						}
 					}
 				}
-				notify(`handoff seed written: ${out}\nReview it, start a fresh session (/new), and paste or reference it there.`, "info");
+				notify(
+					`handoff seed written: ${out}\nReview it, start a fresh session (/new), and paste or reference it there.`,
+					"info",
+				);
 			} catch (err) {
 				notify(`fold-handoff failed: ${err instanceof Error ? err.message : String(err)}`, "error");
 			}

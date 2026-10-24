@@ -29,7 +29,8 @@ const RECALL_PARAMS = Type.Object({
 	),
 	grep: Type.Optional(
 		Type.String({
-			description: "Return only lines containing this text (case-insensitive). Ideal for pulling one detail out of a large folded result.",
+			description:
+				"Return only lines containing this text (case-insensitive). Ideal for pulling one detail out of a large folded result.",
 		}),
 	),
 	lines: Type.Optional(
@@ -53,7 +54,11 @@ function summarize(matches: CodeMatch[], missing: string[], errors: CodeError[] 
 	return lines.join("\n");
 }
 
-export function registerFoldTools(pi: ExtensionAPI, engine: ContextFoldEngine, onUnfold?: (ids: string[]) => void): void {
+export function registerFoldTools(
+	pi: ExtensionAPI,
+	engine: ContextFoldEngine,
+	onUnfold?: (ids: string[]) => void,
+): void {
 	pi.registerTool({
 		name: "recall_folded",
 		label: "Recall folded context",
@@ -70,7 +75,13 @@ export function registerFoldTools(pi: ExtensionAPI, engine: ContextFoldEngine, o
 		],
 		parameters: RECALL_PARAMS,
 		async execute(_toolCallId, params) {
-			type RecallDetails = { recalled?: string[]; missing?: string[]; errors?: string[]; searched?: string; hits?: string[] };
+			type RecallDetails = {
+				recalled?: string[];
+				missing?: string[];
+				errors?: string[];
+				searched?: string;
+				hits?: string[];
+			};
 			const codes = params.codes ?? [];
 			if (params.search && codes.length === 0) {
 				const { hits, note } = engine.searchFolded(params.search);
@@ -84,17 +95,28 @@ export function registerFoldTools(pi: ExtensionAPI, engine: ContextFoldEngine, o
 			if (codes.length === 0) {
 				const details: RecallDetails = {};
 				return {
-					content: [{ type: "text" as const, text: "No codes provided (pass codes, or search=<term> to sweep all folded blocks)." }],
+					content: [
+						{
+							type: "text" as const,
+							text: "No codes provided (pass codes, or search=<term> to sweep all folded blocks).",
+						},
+					],
 					details,
 				};
 			}
 			// codes + search but no grep: treat search as the slice term for those codes.
 			const grep = params.grep ?? params.search;
 			const { matches, missing, errors } = engine.resolveRecall(codes, { grep, lines: params.lines });
-			const body = matches.map((m) => `=== ${m.code} (${m.label})${m.note ? ` — ${m.note}` : ""} ===\n${m.text}`).join("\n\n");
+			const body = matches
+				.map((m) => `=== ${m.code} (${m.label})${m.note ? ` — ${m.note}` : ""} ===\n${m.text}`)
+				.join("\n\n");
 			const header = summarize(matches, missing, errors);
 			const text = matches.length ? `${header}\n\n${body}` : header || "No codes provided.";
-			const details: RecallDetails = { recalled: matches.map((m) => m.code), missing, errors: errors.map((e) => e.code) };
+			const details: RecallDetails = {
+				recalled: matches.map((m) => m.code),
+				missing,
+				errors: errors.map((e) => e.code),
+			};
 			return { content: [{ type: "text" as const, text }], details };
 		},
 	});
@@ -117,13 +139,17 @@ export function registerFoldTools(pi: ExtensionAPI, engine: ContextFoldEngine, o
 			// A compacted code is real but un-expandable: its raw message left live history at hard
 			// compaction. Point at recall, which still serves the content from the session ledger.
 			const compactedLines = compacted.map(
-				(c) => `⚠ ${c} — compacted out of live history; nothing to re-expand. Use recall_folded ${c} (grep=<term> / lines=<a-b>) to read it.`,
+				(c) =>
+					`⚠ ${c} — compacted out of live history; nothing to re-expand. Use recall_folded ${c} (grep=<term> / lines=<a-b>) to read it.`,
 			);
 			const header = [summarize(matches, missing), ...compactedLines].filter(Boolean).join("\n");
 			const text = matches.length
 				? `${header}\n\nExpanded ${matches.length} block(s); full content returns on your next turn.`
 				: header || "No codes provided.";
-			return { content: [{ type: "text", text }], details: { unfolded: matches.map((m) => m.code), missing, compacted } };
+			return {
+				content: [{ type: "text", text }],
+				details: { unfolded: matches.map((m) => m.code), missing, compacted },
+			};
 		},
 	});
 }

@@ -9,7 +9,11 @@ const indexBody = "# Compaction summary (deterministic seed index — no model i
 
 describe("handoff seed", () => {
 	it("states the goal and carries the index verbatim", () => {
-		const seed = buildHandoffSeed({ goal: "continue the migration in a fresh session", indexBody, at: "2026-07-28" });
+		const seed = buildHandoffSeed({
+			goal: "continue the migration in a fresh session",
+			indexBody,
+			at: "2026-07-28",
+		});
 		expect(seed).toContain("continue the migration in a fresh session");
 		expect(seed).toContain(indexBody);
 		expect(seed).toContain("extracted verbatim");

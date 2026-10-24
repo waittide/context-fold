@@ -102,7 +102,12 @@ describe("seed-index emission at fold events", () => {
 		const afterFirst = index.readAll().length;
 
 		for (let i = 20; i < 28; i++) {
-			messages.splice(messages.length - 1, 0, assistantWithCalls([{ id: `c${i}`, name: "read" }]), bigResult(`c${i}`, 400));
+			messages.splice(
+				messages.length - 1,
+				0,
+				assistantWithCalls([{ id: `c${i}`, name: "read" }]),
+				bigResult(`c${i}`, 400),
+			);
 		}
 		e.process(messages, { contextWindow: 80_000, tokens: null });
 		const records = index.readAll();
@@ -127,9 +132,9 @@ describe("seed-index emission at fold events", () => {
 		unavailableIndex.append = () => {
 			throw new Error("index unavailable");
 		};
-		expect(() =>
-			emitFoldIndex(event!, { registry, index: unavailableIndex, sessionId: "s-test" }),
-		).toThrow("index unavailable");
+		expect(() => emitFoldIndex(event!, { registry, index: unavailableIndex, sessionId: "s-test" })).toThrow(
+			"index unavailable",
+		);
 		expect(registry.size).toBe(0);
 
 		expect(() =>

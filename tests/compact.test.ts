@@ -91,7 +91,12 @@ describe("recall survives hard compaction", () => {
 		const { added } = recordCompactedBlocks(blocks, { registry });
 		expect(added.map((a) => a.blockId)).toContain("r:cu");
 		const rec = emitCompactIndex(blocks, {
-			registry, index, sessionId: "s-compact", tokensBefore: 5_000, contextWindow: 80_000, now: 1_722_200_200_000,
+			registry,
+			index,
+			sessionId: "s-compact",
+			tokensBefore: 5_000,
+			contextWindow: 80_000,
+			now: 1_722_200_200_000,
 		});
 		expect(rec.spans.some((s) => s.blockId === "r:cu")).toBe(true); // recovery pointer exists
 

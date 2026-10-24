@@ -139,17 +139,20 @@ export function extractIndex(input: ExtractInput): ExtractedIndex {
 
 /** Re-extract history with recent blocks taking precedence, even within one long user turn. */
 export function extractCompactionIndex(blocks: WireBlock[]): ExtractedIndex {
-	const calls = new Map(blocks.filter(b => b.kind === "tool_call" && b.callId).map(b => [b.callId!, b]));
-	const extracted = blocks.filter(b => b.kind !== "user").map(b => {
-		const call = b.kind === "tool_result" && b.callId ? calls.get(b.callId) : undefined;
-		return extractIndex({ masked: [b], all: call ? [call, b] : [b] });
-	});
+	const calls = new Map(blocks.filter((b) => b.kind === "tool_call" && b.callId).map((b) => [b.callId!, b]));
+	const extracted = blocks
+		.filter((b) => b.kind !== "user")
+		.map((b) => {
+			const call = b.kind === "tool_result" && b.callId ? calls.get(b.callId) : undefined;
+			return extractIndex({ masked: [b], all: call ? [call, b] : [b] });
+		});
 	const recent = (field: "files" | "commands" | "errors" | "identifiers", cap: number): string[] => {
 		const values = new Set<string>();
-		for (const record of extracted) for (const value of record[field]) {
-			values.delete(value);
-			values.add(value);
-		}
+		for (const record of extracted)
+			for (const value of record[field]) {
+				values.delete(value);
+				values.add(value);
+			}
 		return [...values].slice(-cap);
 	};
 	return {
@@ -158,7 +161,9 @@ export function extractCompactionIndex(blocks: WireBlock[]): ExtractedIndex {
 		errors: recent("errors", MAX_ERRORS),
 		identifiers: recent("identifiers", MAX_IDENTIFIERS),
 		// Recovery can compact an oversized user input after omitting its failed assistant attempt.
-		userMessages: blocks.filter(b => b.kind === "user").map(b => ({ turn: b.turn, firstLine: firstLine(b.text, USER_FIRST_LINE_CLIP) })),
+		userMessages: blocks
+			.filter((b) => b.kind === "user")
+			.map((b) => ({ turn: b.turn, firstLine: firstLine(b.text, USER_FIRST_LINE_CLIP) })),
 	};
 }
 
@@ -211,15 +216,44 @@ function harvestCommands(text: string, into: Dedup): void {
 // Identifier shapes for lexical recovery: code symbols with an interior capital/underscore/digit,
 // hex/uuid-ish tokens, dotted versions, and standalone numbers big enough to be load-bearing.
 const SYMBOL_RE = /\b[A-Za-z_$][\w$]{3,}\b/g;
-const HEXISH_RE = /\b(?:0x[0-9a-fA-F]{4,}|[0-9a-f]{8,}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\b/g;
+const HEXISH_RE =
+	/\b(?:0x[0-9a-fA-F]{4,}|[0-9a-f]{8,}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\b/g;
 const VERSION_RE = /\b\d+\.\d+(?:\.\d+)+[\w.-]*\b/g;
 const NUMBER_RE = /\b\d{4,}\b/g;
 
 const SYMBOL_STOPWORDS = new Set([
-	"true", "false", "null", "undefined", "return", "const", "import", "export",
-	"async", "await", "function", "string", "number", "boolean", "object", "array",
-	"void", "never", "type", "interface", "class", "extends", "implements",
-	"this", "self", "super", "new", "throw", "catch", "error", "from", "with",
+	"true",
+	"false",
+	"null",
+	"undefined",
+	"return",
+	"const",
+	"import",
+	"export",
+	"async",
+	"await",
+	"function",
+	"string",
+	"number",
+	"boolean",
+	"object",
+	"array",
+	"void",
+	"never",
+	"type",
+	"interface",
+	"class",
+	"extends",
+	"implements",
+	"this",
+	"self",
+	"super",
+	"new",
+	"throw",
+	"catch",
+	"error",
+	"from",
+	"with",
 ]);
 
 // A word marked by the error lexicon is already carried whole in `errors` — don't spend

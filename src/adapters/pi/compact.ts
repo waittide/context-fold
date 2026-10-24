@@ -66,7 +66,8 @@ export function renderDetCompactionSummary(input: DetCompactionInput): string {
 	if (identifiers.length) parts.push("", "## Exact identifiers (grep keys for recall_folded)", listed(identifiers));
 	if (spans.length) {
 		parts.push("", "## Recovery pointers");
-		for (const s of spans) parts.push(`- {#${s.code ?? "?"} FOLDED} ${s.tool ?? "?"} · turn ${s.turn} · ${s.log.lines} lines`);
+		for (const s of spans)
+			parts.push(`- {#${s.code ?? "?"} FOLDED} ${s.tool ?? "?"} · turn ${s.turn} · ${s.log.lines} lines`);
 	}
 	return parts.join("\n");
 }

@@ -83,22 +83,27 @@ export class FoldLadderPolicy implements FoldPolicy {
 		const stepTokens = cw > 0 ? Math.floor(this.cfg.foldStep * cw) : Math.floor(this.cfg.foldStep * view.budget);
 		const overCap =
 			view.liveTokens > view.budget ||
-			(view.reportedTokens !== undefined && view.reportedBudget !== undefined && view.reportedTokens > view.reportedBudget);
+			(view.reportedTokens !== undefined &&
+				view.reportedBudget !== undefined &&
+				view.reportedTokens > view.reportedBudget);
 		const thresholdHit = cw > 0 && fraction >= foldAt && savings >= stepTokens;
 
 		if (this.providerHoldsContext) {
 			// Nothing this policy masks can reach the model, so even the cap branch stays quiet.
-			this.host?.setStatus("folding paused: the transport holds the conversation, so a fold never reaches the model", {
-				fold_event: false,
-				provider_holds_context: true,
-				usage_fraction: round3(fraction),
-				fold_at: round3(foldAt),
-				maskable_tokens: savings,
-				step_tokens: stepTokens,
-				live_tokens: view.liveTokens,
-				over_budget: false,
-				irreducible_floor: irreducibleFloor(view.blocks),
-			});
+			this.host?.setStatus(
+				"folding paused: the transport holds the conversation, so a fold never reaches the model",
+				{
+					fold_event: false,
+					provider_holds_context: true,
+					usage_fraction: round3(fraction),
+					fold_at: round3(foldAt),
+					maskable_tokens: savings,
+					step_tokens: stepTokens,
+					live_tokens: view.liveTokens,
+					over_budget: false,
+					irreducible_floor: irreducibleFloor(view.blocks),
+				},
+			);
 			return [];
 		}
 		if (!overCap && !thresholdHit) {
@@ -149,20 +154,23 @@ export class FoldLadderPolicy implements FoldPolicy {
 		});
 	}
 
-	private publishIrreducible(view: PolicyView, overCap: boolean, fraction: number, foldAt: number, stepTokens: number): void {
-		this.host?.setStatus(
-			overCap ? "OVER BUDGET: nothing left to mask (tail/roots are the floor)" : null,
-			{
-				fold_event: false,
-				usage_fraction: round3(fraction),
-				fold_at: round3(foldAt),
-				maskable_tokens: 0,
-				step_tokens: stepTokens,
-				live_tokens: view.liveTokens,
-				over_budget: overCap,
-				irreducible_floor: irreducibleFloor(view.blocks),
-			},
-		);
+	private publishIrreducible(
+		view: PolicyView,
+		overCap: boolean,
+		fraction: number,
+		foldAt: number,
+		stepTokens: number,
+	): void {
+		this.host?.setStatus(overCap ? "OVER BUDGET: nothing left to mask (tail/roots are the floor)" : null, {
+			fold_event: false,
+			usage_fraction: round3(fraction),
+			fold_at: round3(foldAt),
+			maskable_tokens: 0,
+			step_tokens: stepTokens,
+			live_tokens: view.liveTokens,
+			over_budget: overCap,
+			irreducible_floor: irreducibleFloor(view.blocks),
+		});
 	}
 }
 

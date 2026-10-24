@@ -93,7 +93,12 @@ export function restoreFoldState(entries: EntryLike[]): {
 		if ((rec.kind === "fold" || rec.kind === "spool" || rec.kind === "gate") && rec.entry?.blockId)
 			byBlock.set(rec.entry.blockId, toFoldEntry(rec.entry));
 		else if (rec.kind === "unfold" && Array.isArray(rec.ids)) for (const id of rec.ids) unfoldedIds.add(id);
-		else if (rec.kind === "layer" && rec.layer && typeof rec.layer.seq === "number" && Array.isArray(rec.layer.entries))
+		else if (
+			rec.kind === "layer" &&
+			rec.layer &&
+			typeof rec.layer.seq === "number" &&
+			Array.isArray(rec.layer.entries)
+		)
 			layersBySeq.set(rec.layer.seq, rec.layer);
 	}
 	const layers = [...layersBySeq.values()].sort((a, b) => a.seq - b.seq);

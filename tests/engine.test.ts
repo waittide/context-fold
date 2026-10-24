@@ -13,7 +13,12 @@ function bigSession(n: number): AgentMessage[] {
 	const out: AgentMessage[] = [user("start the project")];
 	for (let i = 0; i < n; i++) {
 		out.push(user(`step ${i}: read a file`));
-		out.push(assistantWithCalls([{ id: `c${i}`, name: "read" }], { text: `reading file ${i}`, thinking: `I should read file ${i} now` }));
+		out.push(
+			assistantWithCalls([{ id: `c${i}`, name: "read" }], {
+				text: `reading file ${i}`,
+				thinking: `I should read file ${i} now`,
+			}),
+		);
 		out.push(bigResult(`c${i}`, 80));
 	}
 	out.push(user("now summarize"));
@@ -47,7 +52,11 @@ describe("fold under budget", () => {
 
 	it("passes through unchanged when under budget", () => {
 		const engine = new ContextFoldEngine(new FoldLadderPolicy(), CONFIG);
-		const small: AgentMessage[] = [user("hi"), assistantWithCalls([{ id: "c0", name: "read" }], { text: "ok" }), toolResult("c0", "short")];
+		const small: AgentMessage[] = [
+			user("hi"),
+			assistantWithCalls([{ id: "c0", name: "read" }], { text: "ok" }),
+			toolResult("c0", "short"),
+		];
 		const out = engine.process(small, CW);
 		expect(out).toBe(small); // identity — nothing folded
 	});
@@ -85,7 +94,11 @@ describe("fold under budget", () => {
 
 	it("falls back to estimator behavior when Pi has no token value", () => {
 		const engine = new ContextFoldEngine(new FoldLadderPolicy(), CONFIG);
-		const small: AgentMessage[] = [user("hi"), assistantWithCalls([{ id: "fallback", name: "read" }], { text: "ok" }), toolResult("fallback", "short")];
+		const small: AgentMessage[] = [
+			user("hi"),
+			assistantWithCalls([{ id: "fallback", name: "read" }], { text: "ok" }),
+			toolResult("fallback", "short"),
+		];
 		const out = engine.process(small, { contextWindow: CW, tokens: null });
 		expect(out).toBe(small);
 	});

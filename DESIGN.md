@@ -200,14 +200,14 @@ Every hook is fail-open with a bounded blast radius. Folding degradations are an
 and cache-advisory failures use Pi's notification UI when available. A failed notification sink
 cannot prevent the turn.
 
-| failure | cost |
-|---|---|
-| fold pass throws | that one turn's context goes out raw |
-| fold-record, seed-index, or layer persistence throws | that fold event is rejected; the turn goes out raw |
-| fold-code collision on one block | that block alone stays raw for the session; the rest of the event folds |
-| deterministic compaction throws | Pi's own compaction runs instead |
-| resume restore throws | prior folds render raw this session |
-| cache-risk estimate or confirmation throws | input proceeds without the advisory; an explicit cancellation still consumes the input |
+| failure                                               | cost                                                                                                                                   |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| fold pass throws                                      | that one turn's context goes out raw                                                                                                   |
+| fold-record, seed-index, or layer persistence throws  | that fold event is rejected; the turn goes out raw                                                                                     |
+| fold-code collision on one block                      | that block alone stays raw for the session; the rest of the event folds                                                                |
+| deterministic compaction throws                       | Pi's own compaction runs instead                                                                                                       |
+| resume restore throws                                 | prior folds render raw this session                                                                                                    |
+| cache-risk estimate or confirmation throws            | input proceeds without the advisory; an explicit cancellation still consumes the input                                                 |
 | ledger cannot serve a block (absent, or sha mismatch) | a live block still resolves from raw history, through the same recall caps and slices; only a block that also left live history errors |
 
 `CONTEXTFOLD=0` disables the extension entirely for one session, which is the escape hatch for

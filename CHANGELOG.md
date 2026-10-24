@@ -1,4 +1,5 @@
-# Changelog 
+# Changelog
+
 Note: This is largely LLM written, I won't hand write much in here unless I have to
 
 Notable changes to context-fold.
@@ -266,7 +267,7 @@ agent-facing recall surface and a retention rework.
 ## 0.2.3 — 2026-08-05
 
 - **Spool GC no longer reaps a live session that has been quiet.** The sweep dated a sibling
-  session's spool by its newest file, which measures when that session last *folded*, not whether
+  session's spool by its newest file, which measures when that session last _folded_, not whether
   it is still running — so a session that folded early and then ran past the retention window could
   have its spool deleted out from under it by a freshly started sibling. Each session now refreshes
   a `.alive` heartbeat in its own spool directory from the `context` hook, throttled to once an
@@ -386,7 +387,7 @@ describes what the package does rather than how it got here.
   events, and `/context-fold` plus the `CONTEXTFOLD_DEBUG` line report both sides: tokens masked
   per turn against tokens the provider re-prefilled because the fold moved the prefix, plus the
   running net. The cost is charged to the single turn carrying the new bytes, since every later
-  turn reads them back from cache. Measuring it needs a provider that reports cache *writes*; where
+  turn reads them back from cache. Measuring it needs a provider that reports cache _writes_; where
   they are unreported the status says so rather than showing a zero — "nothing was rewritten" and
   "this provider never says" are different facts.
 - **Deferred L0 substitution** (`CONTEXTFOLD_L0_KEEP_RECENT`, default `0` = born-folded). Holds the
@@ -426,7 +427,7 @@ scopes its own reads, and decisive where a flood genuinely lands: a buried-error
 where a flood lands and costs a few percent elsewhere — not a flat ratio. That is why it ships off
 by default.
 
-Fold thresholds were measured before settling on the defaults: folding *earlier* is worse. The
+Fold thresholds were measured before settling on the defaults: folding _earlier_ is worse. The
 dominant cost is the number of fold events rather than the size of any one re-prefill, so a tighter
 budget fired more events and spent more input tokens for fewer cache reads. Fidelity held at every
 threshold, with planted risk lines preserved verbatim inside every folded digest.

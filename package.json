@@ -1,64 +1,67 @@
 {
-  "name": "context-fold",
-  "version": "0.7.0",
-  "description": "Deterministic, reversible in-session context compaction for the Pi coding agent — folds stale tool output out of the model's view, never out of the session.",
-  "keywords": [
-    "pi-package",
-    "pi",
-    "coding-agent",
-    "context",
-    "context-window",
-    "compaction",
-    "prompt-cache"
-  ],
-  "license": "MIT",
-  "author": "Jake Gardner",
-  "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Middlewatch/context-fold.git"
-  },
-  "homepage": "https://github.com/Middlewatch/context-fold#readme",
-  "bugs": {
-    "url": "https://github.com/Middlewatch/context-fold/issues"
-  },
-  "engines": {
-    "node": ">=22.19.0"
-  },
-  "files": [
-    "index.ts",
-    "src",
-    "docs",
-    "DESIGN.md",
-    "CHANGELOG.md"
-  ],
-  "pi": {
-    "extensions": [
-      "./index.ts"
-    ]
-  },
-  "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run typecheck && npm run test"
-  },
-  "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.87.1",
-    "typebox": "*"
-  },
-  "peerDependenciesMeta": {
-    "@earendil-works/pi-coding-agent": {
-      "optional": true
-    },
-    "typebox": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "@earendil-works/pi-coding-agent": "1.2.0",
-    "@types/node": "^26.0.1",
-    "typescript": "^5.6.0",
-    "vitest": "^4.1.10"
-  }
+	"name": "context-fold",
+	"version": "0.7.0",
+	"description": "Deterministic, reversible in-session context compaction for the Pi coding agent — folds stale tool output out of the model's view, never out of the session.",
+	"keywords": [
+		"pi-package",
+		"pi",
+		"coding-agent",
+		"context",
+		"context-window",
+		"compaction",
+		"prompt-cache"
+	],
+	"license": "MIT",
+	"author": "Jake Gardner",
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Middlewatch/context-fold.git"
+	},
+	"homepage": "https://github.com/Middlewatch/context-fold#readme",
+	"bugs": {
+		"url": "https://github.com/Middlewatch/context-fold/issues"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"files": [
+		"index.ts",
+		"src",
+		"docs",
+		"DESIGN.md",
+		"CHANGELOG.md"
+	],
+	"pi": {
+		"extensions": [
+			"./index.ts"
+		]
+	},
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit",
+		"format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"index.ts\" \"*.md\"",
+		"format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"index.ts\" \"*.md\"",
+		"prepublishOnly": "npm run typecheck && npm run test"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": ">=0.87.1",
+		"typebox": "*"
+	},
+	"peerDependenciesMeta": {
+		"@earendil-works/pi-coding-agent": {
+			"optional": true
+		},
+		"typebox": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "1.2.0",
+		"@types/node": "^26.0.1",
+		"prettier": "3.9.10",
+		"typescript": "^5.6.0",
+		"vitest": "^4.1.10"
+	}
 }

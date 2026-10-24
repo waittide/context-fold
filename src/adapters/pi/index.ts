@@ -88,7 +88,9 @@ export default function contextFold(pi: ExtensionAPI): void {
 			telemetry.noteFoldEvent(typeof saved === "number" ? saved : 0);
 			return true;
 		} catch (err) {
-			process.stderr.write(`[context-fold] layer persistence failed (fold skipped): ${err instanceof Error ? err.message : String(err)}\n`);
+			process.stderr.write(
+				`[context-fold] layer persistence failed (fold skipped): ${err instanceof Error ? err.message : String(err)}\n`,
+			);
 			return false;
 		}
 	};
@@ -180,13 +182,17 @@ export default function contextFold(pi: ExtensionAPI): void {
 	// Recall's ledger route: one cached reader per session, attached on every hook that carries a
 	// ctx so recall works regardless of hook arrival order.
 	let ledgerKey = "";
-	const ensureLedger = (ctx: { sessionManager: { getSessionDir(): string; getSessionId(): string; getEntries(): unknown[] } }): void => {
+	const ensureLedger = (ctx: {
+		sessionManager: { getSessionDir(): string; getSessionId(): string; getEntries(): unknown[] };
+	}): void => {
 		// Keyed by dir + id like the index store: a same-id session in another directory must not
 		// be served by a stale reader.
 		const sid = join(ctx.sessionManager.getSessionDir(), ctx.sessionManager.getSessionId());
 		if (ledgerKey === sid) return;
 		ledgerKey = sid;
-		engine.attachLedger(new LedgerReader(() => ctx.sessionManager.getEntries() as { type?: string; message?: unknown }[]));
+		engine.attachLedger(
+			new LedgerReader(() => ctx.sessionManager.getEntries() as { type?: string; message?: unknown }[]),
+		);
 	};
 
 	// The extension's on-disk home: append-only text (seed index, handoff seeds) measured in
@@ -240,13 +246,21 @@ export default function contextFold(pi: ExtensionAPI): void {
 		// Runs AFTER the switch reset (which zeroes the floor) and regardless of whether any fold
 		// ledger exists — a compact record can exist without one.
 		try {
-			engine.ensureLayerSeqAtLeast(indexFor(ctx).readAll().reduce((m, r) => Math.max(m, r.seq), 0));
+			engine.ensureLayerSeqAtLeast(
+				indexFor(ctx)
+					.readAll()
+					.reduce((m, r) => Math.max(m, r.seq), 0),
+			);
 		} catch (err) {
-			process.stderr.write(`[context-fold] seed-index seq floor skipped: ${err instanceof Error ? err.message : String(err)}\n`);
+			process.stderr.write(
+				`[context-fold] seed-index seq floor skipped: ${err instanceof Error ? err.message : String(err)}\n`,
+			);
 		}
 
 		try {
-			const { foldEntries, unfoldedIds, layers } = restoreFoldState(ctx.sessionManager.getEntries() as unknown as { customType?: string; data?: unknown }[]);
+			const { foldEntries, unfoldedIds, layers } = restoreFoldState(
+				ctx.sessionManager.getEntries() as unknown as { customType?: string; data?: unknown }[],
+			);
 			if (foldEntries.length === 0 && unfoldedIds.size === 0 && layers.length === 0) return;
 			for (const e of foldEntries) registry.set(e);
 			engine.restoreUnfolded(unfoldedIds);
@@ -261,7 +275,9 @@ export default function contextFold(pi: ExtensionAPI): void {
 		} catch (err) {
 			// Fail-open: a restore failure just means prior folds render raw this session — but say so,
 			// or the only symptom is silent token creep.
-			process.stderr.write(`[context-fold] resume restore failed (folds render raw): ${err instanceof Error ? err.message : String(err)}\n`);
+			process.stderr.write(
+				`[context-fold] resume restore failed (folds render raw): ${err instanceof Error ? err.message : String(err)}\n`,
+			);
 		}
 	});
 
@@ -316,7 +332,8 @@ export default function contextFold(pi: ExtensionAPI): void {
 		if (adv.coldNow && !wasCold) {
 			const carried = t.last ? t.last.cacheRead + t.last.input : 0;
 			if (carried >= 20_000)
-				notifyCacheWarning(ctx,
+				notifyCacheWarning(
+					ctx,
 					`session cold: rebilled ~${Math.round(carried / 1000)}k tok as fresh input. Consider /fold-handoff`,
 				);
 		}
@@ -370,16 +387,22 @@ export default function contextFold(pi: ExtensionAPI): void {
 					return droppedIds.length ? droppedIds : true;
 				} catch (err) {
 					// Reversibility is a commit precondition. Keep this turn raw when durability fails.
-					process.stderr.write(`[context-fold] seed-index emission failed (fold skipped): ${err instanceof Error ? err.message : String(err)}\n`);
+					process.stderr.write(
+						`[context-fold] seed-index emission failed (fold skipped): ${err instanceof Error ? err.message : String(err)}\n`,
+					);
 					return false;
 				}
 			};
 			const usage = ctx.getContextUsage();
 			ctxUsageIsEstimate = usage?.tokens == null;
-			const messages = engine.process(event.messages as unknown as CoreAgentMessage[], {
-				contextWindow: usage?.contextWindow ?? null,
-				tokens: usage?.tokens ?? null,
-			}, contextRevisions(ctx.sessionManager.getBranch()));
+			const messages = engine.process(
+				event.messages as unknown as CoreAgentMessage[],
+				{
+					contextWindow: usage?.contextWindow ?? null,
+					tokens: usage?.tokens ?? null,
+				},
+				contextRevisions(ctx.sessionManager.getBranch()),
+			);
 			// The cast is the pure/effectful boundary (core/block.ts): the core's structural AgentMessage
 			// models exactly the fields the bridge reads, and Pi's real AgentMessage satisfies it.
 			updateFooter(ctx); // reflect a fold committed this turn (and the fresh trigger gauge)
@@ -395,7 +418,9 @@ export default function contextFold(pi: ExtensionAPI): void {
 		} catch (err) {
 			// Fail-open like the sibling hooks: an engine defect costs this turn's folding (context
 			// goes out raw), never the turn itself. The host also catches, but degrade locally and say so.
-			process.stderr.write(`[context-fold] fold pass failed (context sent raw): ${err instanceof Error ? err.message : String(err)}\n`);
+			process.stderr.write(
+				`[context-fold] fold pass failed (context sent raw): ${err instanceof Error ? err.message : String(err)}\n`,
+			);
 			return { messages: event.messages };
 		}
 	});
@@ -427,8 +452,9 @@ export default function contextFold(pi: ExtensionAPI): void {
 			] as unknown as CoreAgentMessage[];
 			// Rebuild prior compacted evidence from raw branch entries with their current edits.
 			// An old index or summary can otherwise reintroduce omitted/replaced content.
-			const blocks = compactionHistory(branch, prep.firstKeptEntryId)
-				?? reviseBlocks(linearize(leaving), contextRevisions(branch));
+			const blocks =
+				compactionHistory(branch, prep.firstKeptEntryId) ??
+				reviseBlocks(linearize(leaving), contextRevisions(branch));
 			// Record-at-compaction: blocks leaving live history that never folded get codes and fold
 			// records too — the compact record below then carries recovery spans for the whole span,
 			// and recall resolves them from the ledger.
@@ -443,7 +469,9 @@ export default function contextFold(pi: ExtensionAPI): void {
 					`[context-fold] compaction: ${recordedNow.skippedIds.length} block(s) not recallable (record failed): ${recordedNow.skippedIds.join(", ")}\n`,
 				);
 			if (debug && recordedNow.added.length)
-				process.stderr.write(`[context-fold] compaction: recorded ${recordedNow.added.length} unfolded block(s) leaving history\n`);
+				process.stderr.write(
+					`[context-fold] compaction: recorded ${recordedNow.added.length} unfolded block(s) leaving history\n`,
+				);
 			const compactRecord = emitCompactIndex(blocks, {
 				registry,
 				index,
@@ -460,8 +488,12 @@ export default function contextFold(pi: ExtensionAPI): void {
 				sessionFilePath: ctx.sessionManager.getSessionFile?.(),
 			});
 			if (debug)
-				process.stderr.write(`[context-fold] det compaction: ${prep.tokensBefore} tok summarized deterministically (no model)\n`);
-			return { compaction: { summary, firstKeptEntryId: prep.firstKeptEntryId, tokensBefore: prep.tokensBefore } };
+				process.stderr.write(
+					`[context-fold] det compaction: ${prep.tokensBefore} tok summarized deterministically (no model)\n`,
+				);
+			return {
+				compaction: { summary, firstKeptEntryId: prep.firstKeptEntryId, tokensBefore: prep.tokensBefore },
+			};
 		} catch (err) {
 			process.stderr.write(
 				`[context-fold] det compaction failed (falling back to Pi default): ${err instanceof Error ? err.message : String(err)}\n`,
@@ -482,7 +514,8 @@ export default function contextFold(pi: ExtensionAPI): void {
 		if (pendingCompactSeq === null) return;
 		try {
 			indexFor(ctx).appendRetraction(pendingCompactSeq);
-			if (debug) process.stderr.write(`[context-fold] retracted seed-index compact record seq ${pendingCompactSeq}\n`);
+			if (debug)
+				process.stderr.write(`[context-fold] retracted seed-index compact record seq ${pendingCompactSeq}\n`);
 		} catch (err) {
 			// Fail-open: a stale compact record costs duplicate pointers in a later summary, never a turn.
 			process.stderr.write(
@@ -522,7 +555,9 @@ export default function contextFold(pi: ExtensionAPI): void {
 		handler: async (args, cmdCtx) => {
 			const ui = cmdCtx.ui;
 			const say = (message: string, level: "info" | "warning" | "error") => {
-				try { ui?.notify?.(message, level); } catch {}
+				try {
+					ui?.notify?.(message, level);
+				} catch {}
 			};
 			let sub = (args ?? "").trim().toLowerCase();
 			if (!sub && cmdCtx.hasUI && ui?.select) {
@@ -537,7 +572,10 @@ export default function contextFold(pi: ExtensionAPI): void {
 					if (!action) return;
 					sub = action;
 				} catch (err) {
-					say(`context-fold menu unavailable; showing status: ${err instanceof Error ? err.message : String(err)}`, "warning");
+					say(
+						`context-fold menu unavailable; showing status: ${err instanceof Error ? err.message : String(err)}`,
+						"warning",
+					);
 				}
 			}
 			if (sub === "discard-images") {

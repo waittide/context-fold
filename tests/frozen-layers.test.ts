@@ -81,7 +81,7 @@ describe("frozen layers", () => {
 		const { e } = engine();
 		const { messages } = session(3);
 		e.process(messages, 10_000_000);
-		const result = messages.find(m => m.role === "toolResult")!;
+		const result = messages.find((m) => m.role === "toolResult")!;
 		const content = result.content as { text: string }[];
 		content[0].text = content[0].text.replace("line 0:", "Error!:");
 		expect(resultText(e.process(messages, 16_000), "c0")).toContain("Error!:");

@@ -52,7 +52,9 @@ function load(sm: SessionManager) {
 	const runner = {
 		createContext: () => ctx,
 		extensions: [{ path: "context-fold", handlers: hooks }],
-		emitError: (error: unknown) => { throw new Error(JSON.stringify(error)); },
+		emitError: (error: unknown) => {
+			throw new Error(JSON.stringify(error));
+		},
 	};
 	return {
 		hooks,
@@ -61,7 +63,8 @@ function load(sm: SessionManager) {
 			for (const fn of hooks.get(name) ?? []) result = await fn(event, ctx);
 			return result;
 		},
-		context: () => ExtensionRunner.prototype.emitContext.call(runner as never, sm.buildSessionProjection().messages),
+		context: () =>
+			ExtensionRunner.prototype.emitContext.call(runner as never, sm.buildSessionProjection().messages),
 		recall: async (code: string) => {
 			const result = await tools.get("recall_folded").execute("recall", { codes: [code], grep: "MARKER" });
 			return result.content.map((c: { text: string }) => c.text).join("\n");
@@ -70,7 +73,7 @@ function load(sm: SessionManager) {
 }
 
 function resultText(messages: readonly { role: string }[]): string {
-	const m = messages.find(m => m.role === "toolResult") as { content: { text: string }[] } | undefined;
+	const m = messages.find((m) => m.role === "toolResult") as { content: { text: string }[] } | undefined;
 	return m?.content[0].text ?? "";
 }
 const codeOf = (text: string) => /\{#(\w+) FOLDED\}/.exec(text)![1];
@@ -90,8 +93,21 @@ describe("Pi 0.87 compatibility", () => {
 	it("preserves system sections and tool deltas in place through real runner dispatch", async () => {
 		const { sm } = fixture();
 		const entries = sm.getEntries();
-		const head = { role: "system", content: "", sections: { preamble: "BASE", cwd: "OLD" }, toolsAdded: [{ name: "write", description: "Write", parameters: { type: "object" } }], timestamp: 1 };
-		const delta = { role: "system", content: "", sections: { cwd: "NEW" }, toolsRemoved: [{ name: "write" }], toolsAdded: [{ name: "read", description: "Read", parameters: { type: "object" } }], timestamp: 2 };
+		const head = {
+			role: "system",
+			content: "",
+			sections: { preamble: "BASE", cwd: "OLD" },
+			toolsAdded: [{ name: "write", description: "Write", parameters: { type: "object" } }],
+			timestamp: 1,
+		};
+		const delta = {
+			role: "system",
+			content: "",
+			sections: { cwd: "NEW" },
+			toolsRemoved: [{ name: "write" }],
+			toolsAdded: [{ name: "read", description: "Read", parameters: { type: "object" } }],
+			timestamp: 2,
+		};
 		// Place the system messages in a valid persisted transcript, separated by conversation.
 		const restored = SessionManager.inMemory(dir);
 		vi.spyOn(restored, "getSessionDir").mockReturnValue(dir);
@@ -104,8 +120,8 @@ describe("Pi 0.87 compatibility", () => {
 		const before = restored.buildSessionProjection().messages;
 		const out = await h.context();
 		expect(resultText(out)).toContain("FOLDED");
-		expect(out.filter(m => m.role === "system")).toEqual([head, delta]);
-		expect(out.map(m => m.role)).toEqual(before.map(m => m.role));
+		expect(out.filter((m) => m.role === "system")).toEqual([head, delta]);
+		expect(out.map((m) => m.role)).toEqual(before.map((m) => m.role));
 		expect(restored.buildSessionProjection().messages).toEqual(before);
 		restored.appendMessage({ role: "system", content: "", sections: { rules: "new rule" }, timestamp: 3 } as never);
 		const updated = await h.context();
@@ -200,12 +216,18 @@ describe("Pi 0.87 compatibility", () => {
 		expect(result.compaction.summary).not.toContain("ABANDONED_MARKER");
 		await h.invoke("session_compact_failed", { reason: "overflow", aborted: true, willRetry: true });
 		expect(JSON.stringify(await h.context())).not.toContain("ABANDONED_MARKER");
-		expect(sm.getEntries().some(e => e.type === "compaction")).toBe(false);
+		expect(sm.getEntries().some((e) => e.type === "compaction")).toBe(false);
 	});
 
 	it("rebuilds prompt/tool checkpoints and supports a preceding retain-none compaction", async () => {
 		const { sm, append } = fixture();
-		sm.appendMessage({ role: "system", content: "", sections: { preamble: "CURRENT" }, toolsAdded: [], timestamp: 1 } as never);
+		sm.appendMessage({
+			role: "system",
+			content: "",
+			sections: { preamble: "CURRENT" },
+			toolsAdded: [],
+			timestamp: 1,
+		} as never);
 		sm.appendCompaction("obsolete summary", null, 20_000);
 		append(user("next request"));
 		append(assistantText("Error: CURRENT_MARKER"));
@@ -215,7 +237,9 @@ describe("Pi 0.87 compatibility", () => {
 		expect(summary).toContain("OLD_MARKER");
 		expect(summary).toContain("CURRENT_MARKER");
 		expect(summary).not.toContain("obsolete summary");
-		expect(await h.context()).toEqual(expect.arrayContaining([expect.objectContaining({ role: "system", sections: { preamble: "CURRENT" } })]));
+		expect(await h.context()).toEqual(
+			expect.arrayContaining([expect.objectContaining({ role: "system", sections: { preamble: "CURRENT" } })]),
+		);
 	});
 
 	it("uses the active branch after navigating before an edit", async () => {
@@ -237,7 +261,11 @@ describe("Pi 0.87 compatibility", () => {
 		append(assistantWithCalls([{ id: "fresh", name: "read" }]));
 		append(bigResult("fresh", 4000));
 		const prep = prepareCompaction(sm.getBranch(), settings)!;
-		expect([...prep.messagesToSummarize, ...prep.turnPrefixMessages].some(m => m.role === "toolResult" && m.toolCallId === "fresh")).toBe(false);
+		expect(
+			[...prep.messagesToSummarize, ...prep.turnPrefixMessages].some(
+				(m) => m.role === "toolResult" && m.toolCallId === "fresh",
+			),
+		).toBe(false);
 		expect((sm.getEntry(prep.firstKeptEntryId) as any).message.role).toBe("assistant");
 	});
 });

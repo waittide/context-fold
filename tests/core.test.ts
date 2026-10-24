@@ -17,7 +17,14 @@ describe("digest determinism", () => {
 		expect(foldCode("r:c1")).not.toBe(foldCode("r:c2"));
 	});
 	it("foldable digests carry the {#code FOLDED} tag; the code matches the id", () => {
-		const b = { id: "r:c1", kind: "tool_result" as const, text: "hello world", tokens: 3, toolName: "read", isError: false };
+		const b = {
+			id: "r:c1",
+			kind: "tool_result" as const,
+			text: "hello world",
+			tokens: 3,
+			toolName: "read",
+			isError: false,
+		};
 		const d = digest(b);
 		expect(d.startsWith(foldTag("r:c1"))).toBe(true);
 		expect(d).toContain(`{#${foldCode("r:c1")} FOLDED}`);
@@ -55,11 +62,7 @@ describe("applyPlan — in-place folds keep tool pairs", () => {
 	});
 
 	it("never folds a tool_call (would orphan its result)", () => {
-		const messages = [
-			user("x"),
-			assistantWithCalls([{ id: "c1", name: "read" }]),
-			toolResult("c1", "data"),
-		];
+		const messages = [user("x"), assistantWithCalls([{ id: "c1", name: "read" }]), toolResult("c1", "data")];
 		// Try to fold the assistant tool_call part by its id — applyPlan must ignore it.
 		const blocks = linearize(messages);
 		const callBlock = blocks.find((b) => b.kind === "tool_call")!;
@@ -77,7 +80,13 @@ describe("applyPlan — in-place folds keep tool pairs", () => {
 		// that structural property on the worst-case shape.
 		const messages = [
 			user("parallel work"),
-			assistantWithCalls([{ id: "c1", name: "read" }, { id: "c2", name: "grep" }], { text: "doing both" }),
+			assistantWithCalls(
+				[
+					{ id: "c1", name: "read" },
+					{ id: "c2", name: "grep" },
+				],
+				{ text: "doing both" },
+			),
 			toolResult("c1", "result one"),
 			toolResult("c2", "result two"),
 		];
@@ -95,7 +104,9 @@ describe("applyPlan — defense in depth", () => {
 		// Two assistant messages with no responseId and the same millisecond timestamp compute the
 		// same durable id; applying one op to both would overwrite A's conclusion with B's digest.
 		const twin = (text: string) =>
-			({ role: "assistant", timestamp: 777, content: [{ type: "text", text }] }) as unknown as ReturnType<typeof user>;
+			({ role: "assistant", timestamp: 777, content: [{ type: "text", text }] }) as unknown as ReturnType<
+				typeof user
+			>;
 		const messages = [user("x"), twin("conclusion A"), twin("conclusion B"), assistantText("unique", "resp9")];
 		const out = applyPlan(messages, [{ id: "a:t777:p0", digestText: "{#zzzzzz FOLDED} collided" }]);
 		expect(out).toBe(messages); // ambiguous → untouched, same array by reference
@@ -113,13 +124,20 @@ describe("applyPlan — defense in depth", () => {
 	it("ignores non-durable ids and empty digests", () => {
 		const messages = [user("x"), assistantText("hi")];
 		const before = JSON.stringify(messages);
-		const out = applyPlan(messages, [{ id: "m3:p0", digestText: "x" } as FoldOp, { id: "r:c1", digestText: "" } as FoldOp]);
+		const out = applyPlan(messages, [
+			{ id: "m3:p0", digestText: "x" } as FoldOp,
+			{ id: "r:c1", digestText: "" } as FoldOp,
+		]);
 		expect(out).toBe(messages); // identity fast-path: nothing safe to apply
 		expect(JSON.stringify(messages)).toBe(before); // input never mutated
 	});
 
 	it("is pure: the input array and messages are never mutated", () => {
-		const messages = [user("x"), assistantWithCalls([{ id: "c1", name: "read" }], { text: "t" }), bigResult("c1", 50)];
+		const messages = [
+			user("x"),
+			assistantWithCalls([{ id: "c1", name: "read" }], { text: "t" }),
+			bigResult("c1", 50),
+		];
 		const snapshot = JSON.stringify(messages);
 		applyPlan(messages, [{ id: "r:c1", digestText: "{#aaa111 FOLDED} read → folded" }]);
 		expect(JSON.stringify(messages)).toBe(snapshot);
@@ -147,7 +165,11 @@ describe("opaque tool results (non-text parts)", () => {
 		expect(tr.opaque).toBe(true);
 		expect(wireFoldable(tr)).toBe(false);
 		// A text-only result stays foldable.
-		const plain = linearize([user("x"), assistantWithCalls([{ id: "c2", name: "read" }]), toolResult("c2", "plain text")]);
+		const plain = linearize([
+			user("x"),
+			assistantWithCalls([{ id: "c2", name: "read" }]),
+			toolResult("c2", "plain text"),
+		]);
 		expect(plain.find((b) => b.kind === "tool_result")!.opaque).toBeUndefined();
 	});
 });

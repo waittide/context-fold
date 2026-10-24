@@ -70,7 +70,7 @@ export const KNOBS: readonly KnobSpec[] = [
 		hint: "warn after this many idle minutes; investigate your provider's retention; 'off' or 0 disables",
 		def: 30,
 		live: true,
-		parse: (raw) => raw === "off" ? 0 : nonNegative(raw),
+		parse: (raw) => (raw === "off" ? 0 : nonNegative(raw)),
 		format: offOrNumber,
 	},
 	{
@@ -81,7 +81,7 @@ export const KNOBS: readonly KnobSpec[] = [
 		def: "off",
 		choices: ["off", "on"],
 		live: true,
-		parse: (raw) => raw === "on" || raw === "off" ? raw : undefined,
+		parse: (raw) => (raw === "on" || raw === "off" ? raw : undefined),
 		format: plain,
 	},
 	{
@@ -207,8 +207,12 @@ export function resolveKnob(spec: KnobSpec, saved: SavedSettings = {}, provider?
 		const v = spec.parse(raw.trim());
 		if (v !== undefined) return { value: v, source: "env" };
 	}
-	if (spec.key === "cacheIdleMinutes" && provider && saved.providerCacheIdleMinutes &&
-		Object.hasOwn(saved.providerCacheIdleMinutes, provider)) {
+	if (
+		spec.key === "cacheIdleMinutes" &&
+		provider &&
+		saved.providerCacheIdleMinutes &&
+		Object.hasOwn(saved.providerCacheIdleMinutes, provider)
+	) {
 		return { value: saved.providerCacheIdleMinutes[provider], source: "saved" };
 	}
 	const s = saved[spec.key];

@@ -19,7 +19,8 @@ const sha = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 
 function floodWith(buried: string): string {
 	const lines: string[] = [];
-	for (let i = 0; i < 300; i++) lines.push(`row ${i}: ordinary tabular content spanning the width of the terminal for bulk`);
+	for (let i = 0; i < 300; i++)
+		lines.push(`row ${i}: ordinary tabular content spanning the width of the terminal for bulk`);
 	lines.push(buried);
 	for (let i = 300; i < 600; i++) lines.push(`row ${i}: further ordinary tabular content to keep the payload large`);
 	return lines.join("\n");
@@ -102,7 +103,14 @@ describe("ledger recall — byte integrity within the re-flood cap", () => {
 			const code = foldCode(blockId);
 			const content = floodWith(`BURIED marker unique ${i} value ${i * 111}`);
 			messages.push(assistantWithCalls([{ id: `call${i}`, name: "read" }]), toolResult(`call${i}`, content));
-			registry.set({ blockId, code, tool: "read", isError: false, bytes: Buffer.byteLength(content, "utf8"), sha256: sha256Hex(content) });
+			registry.set({
+				blockId,
+				code,
+				tool: "read",
+				isError: false,
+				bytes: Buffer.byteLength(content, "utf8"),
+				sha256: sha256Hex(content),
+			});
 			contents[code] = content;
 		}
 		const engine = engineWith(registry);
@@ -147,7 +155,11 @@ describe("ledger recall — partial retrieval", () => {
 
 describe("ledger recall — failure and compaction surfaces", () => {
 	it("a never-folded block's code does not resolve — recall serves folded content only", () => {
-		const engine = new ContextFoldEngine(new FoldLadderPolicy(), { defaultContextWindow: 1_000_000, tailTarget: 100 }, new MapFoldRegistry());
+		const engine = new ContextFoldEngine(
+			new FoldLadderPolicy(),
+			{ defaultContextWindow: 1_000_000, tailTarget: 100 },
+			new MapFoldRegistry(),
+		);
 		const messages = sessionWith("c9", floodWith("NEVER-FOLDED"));
 		engine.attachLedger(readerOver(messages));
 		engine.process(messages, 1_000_000); // far under threshold: nothing folds

@@ -25,11 +25,24 @@ export function assistantWithCalls(
 	if (opts.thinking) content.push({ type: "thinking", thinking: opts.thinking });
 	if (opts.text) content.push({ type: "text", text: opts.text });
 	for (const c of calls) content.push({ type: "toolCall", id: c.id, name: c.name, arguments: c.args ?? {} });
-	return { role: "assistant", content, responseId: opts.responseId ?? `r${nextTs()}`, model: "test", timestamp: nextTs() };
+	return {
+		role: "assistant",
+		content,
+		responseId: opts.responseId ?? `r${nextTs()}`,
+		model: "test",
+		timestamp: nextTs(),
+	};
 }
 
 export function toolResult(toolCallId: string, text: string, toolName = "read", isError = false): AgentMessage {
-	return { role: "toolResult", toolCallId, toolName, content: [{ type: "text", text }], isError, timestamp: nextTs() };
+	return {
+		role: "toolResult",
+		toolCallId,
+		toolName,
+		content: [{ type: "text", text }],
+		isError,
+		timestamp: nextTs(),
+	};
 }
 
 /** A big tool result (lots of lines) to drive token pressure. */

@@ -164,7 +164,10 @@ function textOf(content: unknown): string {
 	if (typeof content === "string") return content;
 	if (Array.isArray(content))
 		return content
-			.filter((b): b is { type: string; text: string } => !!b && (b as any).type === "text" && typeof (b as any).text === "string")
+			.filter(
+				(b): b is { type: string; text: string } =>
+					!!b && (b as any).type === "text" && typeof (b as any).text === "string",
+			)
 			.map((b) => b.text)
 			.join("\n");
 	return "";
@@ -191,7 +194,12 @@ export function linearize(messages: AgentMessage[]): WireBlock[] {
 		id: string,
 		kind: WireBlock["kind"],
 		text: string,
-		extra: Partial<Pick<WireBlock, "toolName" | "callId" | "model" | "isError" | "input" | "fullOutputPath" | "opaque" | "signed">> = {},
+		extra: Partial<
+			Pick<
+				WireBlock,
+				"toolName" | "callId" | "model" | "isError" | "input" | "fullOutputPath" | "opaque" | "signed"
+			>
+		> = {},
 	) => {
 		if (!text && kind !== "tool_result") return; // drop empty non-results
 		out.push({ id, kind, turn, order: order++, text, tokens: tokensFor(text), ...extra });
@@ -214,7 +222,8 @@ export function linearize(messages: AgentMessage[]): WireBlock[] {
 							model: m.model,
 							...(signed ? { signed } : {}),
 						});
-					} else if (b?.type === "text") push(blockId(m, i, j), "text", (b as TextPart).text || "", { model: m.model });
+					} else if (b?.type === "text")
+						push(blockId(m, i, j), "text", (b as TextPart).text || "", { model: m.model });
 					else if (b?.type === "toolCall") {
 						const c = b as ToolCallPart;
 						if (c.id != null && c.arguments !== undefined) argsByCallId.set(c.id, c.arguments);
@@ -228,7 +237,8 @@ export function linearize(messages: AgentMessage[]): WireBlock[] {
 				break;
 			}
 			case "toolResult": {
-				const hasNonText = Array.isArray(m.content) && (m.content as any[]).some((b) => b && (b as any).type !== "text");
+				const hasNonText =
+					Array.isArray(m.content) && (m.content as any[]).some((b) => b && (b as any).type !== "text");
 				const input = m.toolCallId != null ? argsByCallId.get(m.toolCallId) : undefined;
 				const fullOutputPath =
 					m.details && typeof (m.details as { fullOutputPath?: unknown }).fullOutputPath === "string"
@@ -252,4 +262,3 @@ export function linearize(messages: AgentMessage[]): WireBlock[] {
 
 	return out;
 }
-

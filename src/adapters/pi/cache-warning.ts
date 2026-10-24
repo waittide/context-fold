@@ -23,7 +23,10 @@ export class CacheWarning {
 	constructor(private readonly settings: () => SavedSettings) {}
 
 	private failed(ctx: ExtensionContext, error: unknown): void {
-		notifyCacheWarning(ctx, `Cache advisory unavailable: ${error instanceof Error ? error.message : String(error)}`);
+		notifyCacheWarning(
+			ctx,
+			`Cache advisory unavailable: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 
 	pause(): void {
@@ -47,11 +50,19 @@ export class CacheWarning {
 				if (entry.type === "message") this.observe(entry.message, Date.parse(entry.timestamp));
 			}
 			this.refresh(ctx);
-		} catch (error) { this.failed(ctx, error); }
+		} catch (error) {
+			this.failed(ctx, error);
+		}
 	}
 
 	observe(message: MessageEndEvent["message"], at = Date.now()): void {
-		if (message.role !== "assistant" || message.stopReason === "error" || message.stopReason === "aborted" || message.stopReason === "pending") return;
+		if (
+			message.role !== "assistant" ||
+			message.stopReason === "error" ||
+			message.stopReason === "aborted" ||
+			message.stopReason === "pending"
+		)
+			return;
 		if (!message.provider || !message.model || !message.usage || !Number.isFinite(at) || at > Date.now()) return;
 		const u = message.usage;
 		const tokens = u.input + u.cacheRead + u.cacheWrite + u.output;
@@ -78,7 +89,12 @@ export class CacheWarning {
 		const at = this.activity.get(key);
 		const remaining = at === undefined ? 0 : at + minutes * 60_000 - Date.now();
 		const state = at === undefined ? "cache unverified" : "cache may have expired";
-		return { key, at, remaining, text: `${state}: ~${Math.round(tokens / 1000)}k tok may rebill. Consider /fold-handoff` };
+		return {
+			key,
+			at,
+			remaining,
+			text: `${state}: ~${Math.round(tokens / 1000)}k tok may rebill. Consider /fold-handoff`,
+		};
 	}
 
 	refresh(ctx: ExtensionContext): void {
@@ -95,20 +111,29 @@ export class CacheWarning {
 				notifyCacheWarning(ctx, risk.text);
 				this.warned.set(risk.key, risk.at);
 			}
-		} catch (error) { this.failed(ctx, error); }
+		} catch (error) {
+			this.failed(ctx, error);
+		}
 	}
 
 	discardImages(ctx: ExtensionContext): void {
 		this.retainedImages = undefined;
-		try { ctx.ui.notify("Retained draft images discarded.", "info"); } catch {}
+		try {
+			ctx.ui.notify("Retained draft images discarded.", "info");
+		} catch {}
 	}
 
 	async input(event: InputEvent, ctx: ExtensionContext): Promise<InputEventResult> {
-		if (!ctx.hasUI || (ctx.mode && ctx.mode !== "tui") || event.source !== "interactive" || event.streamingBehavior) return { action: "continue" };
+		if (!ctx.hasUI || (ctx.mode && ctx.mode !== "tui") || event.source !== "interactive" || event.streamingBehavior)
+			return { action: "continue" };
 		const retained = this.retainedImages;
-		const images = retained ? [...retained, ...(event.images ?? [])].filter((image, index, all) =>
-			all.findIndex(other => other.data === image.data && other.mimeType === image.mimeType) === index,
-		) : event.images;
+		const images = retained
+			? [...retained, ...(event.images ?? [])].filter(
+					(image, index, all) =>
+						all.findIndex((other) => other.data === image.data && other.mimeType === image.mimeType) ===
+						index,
+				)
+			: event.images;
 		const proceed = (): InputEventResult => {
 			this.retainedImages = undefined;
 			return retained ? { action: "transform", text: event.text, images } : { action: "continue" };
@@ -116,7 +141,8 @@ export class CacheWarning {
 		const epoch = this.epoch;
 		try {
 			const risk = this.forecast(ctx);
-			if (!risk || risk.remaining > 0 || resolveKnob(knob("confirmColdPrompt"), this.settings()).value !== "on") return proceed();
+			if (!risk || risk.remaining > 0 || resolveKnob(knob("confirmColdPrompt"), this.settings()).value !== "on")
+				return proceed();
 			const selectedModel = ctx.model && modelKey(ctx.model.provider, ctx.model.id);
 			const choice = await ctx.ui.select(risk.text, ["Keep draft", "Send anyway"]);
 			if (epoch !== this.epoch) {
@@ -126,7 +152,9 @@ export class CacheWarning {
 			const modelChanged = selectedModel !== (ctx.model && modelKey(ctx.model.provider, ctx.model.id));
 			if (choice === "Send anyway" && !modelChanged) return proceed();
 			this.retainedImages = images;
-			try { ctx.ui.setEditorText(event.text); } catch {
+			try {
+				ctx.ui.setEditorText(event.text);
+			} catch {
 				notifyCacheWarning(ctx, `Prompt not sent; editor restore failed. Draft: ${event.text}`);
 			}
 			// setEditorText changes the buffer without requesting a Pi render. The notice also

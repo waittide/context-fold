@@ -53,7 +53,13 @@ describe.skipIf(!PI_PRESENT)("extension entry point", () => {
 		contextFold(s.api);
 
 		expect(s.hooks).toEqual(
-			expect.arrayContaining(["session_start", "message_end", "agent_settled", "context_with_system", "session_before_compact"]),
+			expect.arrayContaining([
+				"session_start",
+				"message_end",
+				"agent_settled",
+				"context_with_system",
+				"session_before_compact",
+			]),
 		);
 		expect(s.hooks).not.toContain("context");
 		expect(s.hooks).not.toContain("tool_result");

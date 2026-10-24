@@ -23,7 +23,7 @@ any version claim in `README.md` all agree.
 
 ## Versioning
 
-Semver. While the major is `0`, treat a change to fold *timing* or to the seed-index record shape as
+Semver. While the major is `0`, treat a change to fold _timing_ or to the seed-index record shape as
 a minor bump and document it in `CHANGELOG.md`, because downstream recall tooling reads that format.
 Documentation-only and display-only changes are patch releases and say so in their changelog entry.
 

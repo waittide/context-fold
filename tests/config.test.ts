@@ -159,7 +159,9 @@ describe("cache warning settings", () => {
 	});
 
 	it("validates each provider independently and supports disabling warnings", () => {
-		expect(parseSavedSettings({ providerCacheIdleMinutes: { openai: "10", custom: "off", bad: -1, broken: {} } })).toEqual({
+		expect(
+			parseSavedSettings({ providerCacheIdleMinutes: { openai: "10", custom: "off", bad: -1, broken: {} } }),
+		).toEqual({
 			providerCacheIdleMinutes: { openai: 10, custom: 0 },
 		});
 		expect(parseSavedSettings({ providerCacheIdleMinutes: [] })).toEqual({});

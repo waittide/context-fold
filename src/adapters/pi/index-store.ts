@@ -13,7 +13,13 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { extractIndex, extractCompactionIndex, buildIndexRecord, type IndexSpan, type SeedIndexRecord } from "../../core/index/seed-index";
+import {
+	extractIndex,
+	extractCompactionIndex,
+	buildIndexRecord,
+	type IndexSpan,
+	type SeedIndexRecord,
+} from "../../core/index/seed-index";
 import { foldCode, wireFoldable } from "../../core/digest";
 import { isDurableId, type WireBlock } from "../../core/block";
 import type { FoldEventReport } from "./store";
@@ -103,8 +109,10 @@ export class SeedIndexStore {
 			if (!t) continue;
 			try {
 				const rec = JSON.parse(t) as SeedIndexRecord | RetractRecord;
-				if (rec && rec.kind === "fold-index" && Array.isArray((rec as SeedIndexRecord).spans)) out.push(rec as SeedIndexRecord);
-				else if (rec && rec.kind === "fold-retract" && typeof rec.seq === "number") out = out.filter((r) => r.seq !== rec.seq);
+				if (rec && rec.kind === "fold-index" && Array.isArray((rec as SeedIndexRecord).spans))
+					out.push(rec as SeedIndexRecord);
+				else if (rec && rec.kind === "fold-retract" && typeof rec.seq === "number")
+					out = out.filter((r) => r.seq !== rec.seq);
 			} catch {
 				/* junk line — skip */
 			}

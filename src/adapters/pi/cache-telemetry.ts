@@ -117,7 +117,8 @@ export class CacheTelemetry {
 		// observing cacheRead ≥ that size proves the rewrite was dropped or deferred downstream.
 		// Only armed when the fold masked something and a prior turn gives a non-zero baseline
 		// (a no-cache provider reports cacheRead 0 and can never false-positive against > 0).
-		if (Number.isFinite(savedTokens) && savedTokens > 0 && this.lastPromptSize > 0) this.pendingWireBaseline = this.lastPromptSize;
+		if (Number.isFinite(savedTokens) && savedTokens > 0 && this.lastPromptSize > 0)
+			this.pendingWireBaseline = this.lastPromptSize;
 	}
 
 	/** Record one finalized assistant message's usage. Non-finite fields count as 0. */
@@ -187,7 +188,10 @@ export class CacheTelemetry {
 					: null,
 			wireDeferredFolds: this.wireDeferredFolds,
 			providerHoldsContext:
-				this.usageTurns >= 2 && this.totals.cacheRead > 0 && this.totals.input === 0 && this.totals.cacheWrite === 0,
+				this.usageTurns >= 2 &&
+				this.totals.cacheRead > 0 &&
+				this.totals.input === 0 &&
+				this.totals.cacheWrite === 0,
 		};
 	}
 

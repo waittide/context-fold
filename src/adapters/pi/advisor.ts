@@ -67,9 +67,7 @@ export function advise(i: AdvisorInput): Advisory {
 		(i.lastInput >= COLD_NOTIFY_INPUT || carried >= CARRY_FLOOR || !i.everWarm);
 
 	const paybackTurns =
-		carried > i.reconTokens + CARRY_FLOOR / 2
-			? round1(i.reconTokens / (0.1 * (carried - i.reconTokens)))
-			: null;
+		carried > i.reconTokens + CARRY_FLOOR / 2 ? round1(i.reconTokens / (0.1 * (carried - i.reconTokens))) : null;
 
 	const flags: string[] = [];
 	if (i.wireDeferredFolds > 0) {
@@ -78,7 +76,9 @@ export function advise(i: AdvisorInput): Advisory {
 		);
 	}
 	if (i.compactions >= 2) {
-		flags.push(`second forced compaction this session — strongly recommend a fresh session (reconstruction ≈ ${k(i.reconTokens)} tok via the seed index)`);
+		flags.push(
+			`second forced compaction this session — strongly recommend a fresh session (reconstruction ≈ ${k(i.reconTokens)} tok via the seed index)`,
+		);
 	}
 	if (i.contextWindow && i.irreducibleFloor !== null && i.irreducibleFloor > 0.5 * i.contextWindow) {
 		flags.push(
@@ -95,7 +95,12 @@ export function advise(i: AdvisorInput): Advisory {
 			`recall churn (${i.recallCalls} calls${i.maxRecallsPerCode >= RECALL_PER_CODE_CHURN ? `, one code ×${i.maxRecallsPerCode}` : ""}) — unfold the hot blocks, or hand off to a fresh session`,
 		);
 	}
-	if (flags.length === 0 && paybackTurns !== null && paybackTurns <= 2 && carried > 0.6 * (i.contextWindow ?? Infinity)) {
+	if (
+		flags.length === 0 &&
+		paybackTurns !== null &&
+		paybackTurns <= 2 &&
+		carried > 0.6 * (i.contextWindow ?? Infinity)
+	) {
 		flags.push(`carrying ~${k(carried)} tok — a reset would pay for itself in ~${paybackTurns} warm turns`);
 	}
 	return { coldNow, paybackTurns, flags };

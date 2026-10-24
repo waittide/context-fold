@@ -7,14 +7,7 @@
  * every clipping helper must leave valid text behind.
  */
 import { describe, it, expect } from "vitest";
-import {
-	safeSlice,
-	clampPrefix,
-	clampWindow,
-	scrubLoneSurrogates,
-	clip,
-	firstLine,
-} from "../src/core/tokens";
+import { safeSlice, clampPrefix, clampWindow, scrubLoneSurrogates, clip, firstLine } from "../src/core/tokens";
 import { digest, foldTag } from "../src/core/digest";
 
 /** An astral character (emoji) as its two UTF-16 code units. */

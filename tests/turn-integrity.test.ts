@@ -68,7 +68,9 @@ describe("computeStrictEchoGroups", () => {
 	});
 
 	it("ignores a tool call with no preceding reasoning", () => {
-		expect(computeStrictEchoGroups(blocks(assistantWithCalls([{ id: "c1", name: "read", args: {} }])))).toHaveLength(0);
+		expect(
+			computeStrictEchoGroups(blocks(assistantWithCalls([{ id: "c1", name: "read", args: {} }]))),
+		).toHaveLength(0);
 	});
 
 	it("ignores orphan signed reasoning with no following act", () => {

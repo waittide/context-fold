@@ -6,32 +6,66 @@ import { CacheWarning } from "../src/adapters/pi/cache-warning";
 const NOW = Date.UTC(2026, 8, 5, 12);
 const MINUTE = 60_000;
 function assistant(at = NOW - 31 * MINUTE, provider = "openai", model = "test") {
-	return { role: "assistant", provider, model, timestamp: at, stopReason: "stop", usage: { input: 5_000, cacheRead: 79_000, cacheWrite: 0, output: 1_000 } };
+	return {
+		role: "assistant",
+		provider,
+		model,
+		timestamp: at,
+		stopReason: "stop",
+		usage: { input: 5_000, cacheRead: 79_000, cacheWrite: 0, output: 1_000 },
+	};
 }
 function fixture() {
 	let settings: SavedSettings = {};
 	let entries = [{ type: "message", timestamp: new Date(NOW - 31 * MINUTE).toISOString(), message: assistant() }];
-	const ui = { notify: vi.fn(), select: vi.fn().mockResolvedValue("Keep draft"), setEditorText: vi.fn(), getEditorText: vi.fn().mockReturnValue("") };
+	const ui = {
+		notify: vi.fn(),
+		select: vi.fn().mockResolvedValue("Keep draft"),
+		setEditorText: vi.fn(),
+		getEditorText: vi.fn().mockReturnValue(""),
+	};
 	const context = {
-		hasUI: true, mode: "tui", model: { provider: "openai", id: "test" },
+		hasUI: true,
+		mode: "tui",
+		model: { provider: "openai", id: "test" },
 		isIdle: vi.fn().mockReturnValue(true),
 		getContextUsage: vi.fn().mockReturnValue({ tokens: 85_000, contextWindow: 200_000 }),
-		sessionManager: { getSessionId: () => "s1", getBranch: () => entries }, ui,
+		sessionManager: { getSessionId: () => "s1", getBranch: () => entries },
+		ui,
 	};
 	const ctx = context as unknown as ExtensionContext;
 	const warning = new CacheWarning(() => settings);
-	return { warning, ctx, context, ui, settings: (value: SavedSettings) => settings = value, entries: (value: typeof entries) => entries = value };
+	return {
+		warning,
+		ctx,
+		context,
+		ui,
+		settings: (value: SavedSettings) => (settings = value),
+		entries: (value: typeof entries) => (entries = value),
+	};
 }
-const input = (text = "continue with /tmp/pi-clipboard.png"): InputEvent => ({ type: "input", text, source: "interactive" });
+const input = (text = "continue with /tmp/pi-clipboard.png"): InputEvent => ({
+	type: "input",
+	text,
+	source: "interactive",
+});
 
-beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(NOW); });
-afterEach(() => { vi.useRealTimers(); });
+beforeEach(() => {
+	vi.useFakeTimers();
+	vi.setSystemTime(NOW);
+});
+afterEach(() => {
+	vi.useRealTimers();
+});
 
 describe("cache inactivity warning", () => {
 	it("warns on resume before input and once per idle interval", () => {
 		const f = fixture();
 		f.warning.restore(f.ctx);
-		expect(f.ui.notify).toHaveBeenCalledWith("cache may have expired: ~85k tok may rebill. Consider /fold-handoff", "warning");
+		expect(f.ui.notify).toHaveBeenCalledWith(
+			"cache may have expired: ~85k tok may rebill. Consider /fold-handoff",
+			"warning",
+		);
 		f.warning.refresh(f.ctx);
 		vi.advanceTimersByTime(60 * MINUTE);
 		expect(f.ui.notify).toHaveBeenCalledTimes(1);
@@ -59,7 +93,11 @@ describe("cache inactivity warning", () => {
 		f.entries([{ type: "message", timestamp: new Date(NOW).toISOString(), message: assistant(NOW) }]);
 		f.warning.restore(f.ctx);
 		vi.advanceTimersByTime(29 * MINUTE);
-		for (const message of [{ role: "toolResult" }, { ...assistant(Date.now()), stopReason: "error" }, { ...assistant(Date.now()), stopReason: "aborted" }]) {
+		for (const message of [
+			{ role: "toolResult" },
+			{ ...assistant(Date.now()), stopReason: "error" },
+			{ ...assistant(Date.now()), stopReason: "aborted" },
+		]) {
 			f.warning.observe(message as MessageEndEvent["message"]);
 		}
 		vi.advanceTimersByTime(MINUTE);
@@ -86,7 +124,10 @@ describe("cache inactivity warning", () => {
 		expect(f.ui.notify).toHaveBeenCalledTimes(1);
 		f.context.model = { provider: "openai", id: "other" };
 		f.warning.refresh(f.ctx);
-		expect(f.ui.notify).toHaveBeenLastCalledWith("cache unverified: ~85k tok may rebill. Consider /fold-handoff", "warning");
+		expect(f.ui.notify).toHaveBeenLastCalledWith(
+			"cache unverified: ~85k tok may rebill. Consider /fold-handoff",
+			"warning",
+		);
 		f.warning.dispose();
 	});
 
@@ -104,7 +145,9 @@ describe("cache inactivity warning", () => {
 	it("estimates the retained context after compaction instead of reusing old usage", () => {
 		const f = fixture();
 		f.context.getContextUsage.mockReturnValue({ tokens: null, contextWindow: 200_000 } as never);
-		Object.assign(f.context.sessionManager, { buildContextEntries: () => [{ role: "user", content: "small handoff" }] });
+		Object.assign(f.context.sessionManager, {
+			buildContextEntries: () => [{ role: "user", content: "small handoff" }],
+		});
 		f.warning.restore(f.ctx);
 		expect(f.ui.notify).not.toHaveBeenCalled();
 		f.warning.dispose();
@@ -157,7 +200,11 @@ describe("optional input confirmation", () => {
 		f.warning.restore(f.ctx);
 		expect(await f.warning.input(input(), f.ctx)).toEqual({ action: "continue" });
 		f.settings({ confirmColdPrompt: "on" });
-		for (const event of [{ ...input(), source: "extension" as const }, { ...input(), source: "rpc" as const }, { ...input(), streamingBehavior: "steer" as const }]) {
+		for (const event of [
+			{ ...input(), source: "extension" as const },
+			{ ...input(), source: "rpc" as const },
+			{ ...input(), streamingBehavior: "steer" as const },
+		]) {
 			expect(await f.warning.input(event, f.ctx)).toEqual({ action: "continue" });
 		}
 		expect(f.ui.select).not.toHaveBeenCalled();
@@ -175,7 +222,11 @@ describe("optional input confirmation", () => {
 		const images = [{ type: "image" as const, data: "aGVsbG8=", mimeType: "image/png" }];
 		expect(await f.warning.input({ ...input(), images }, f.ctx)).toEqual({ action: "handled" });
 		f.ui.select.mockResolvedValue("Send anyway");
-		expect(await f.warning.input(input("edited draft"), f.ctx)).toEqual({ action: "transform", text: "edited draft", images });
+		expect(await f.warning.input(input("edited draft"), f.ctx)).toEqual({
+			action: "transform",
+			text: "edited draft",
+			images,
+		});
 		expect(await f.warning.input(input("unrelated next prompt"), f.ctx)).toEqual({ action: "continue" });
 		f.warning.dispose();
 	});
@@ -197,29 +248,36 @@ describe("optional input confirmation", () => {
 		f.warning.dispose();
 	});
 
-	it.each([undefined, "Send anyway"])("keeps text and images if the model changes while confirmation is open (%s)", async choice => {
-		const f = fixture();
-		f.settings({ confirmColdPrompt: "on" });
-		f.warning.restore(f.ctx);
-		let answer!: (value: string | undefined) => void;
-		f.ui.select.mockImplementation(() => new Promise(resolve => answer = resolve));
-		const images = [{ type: "image" as const, data: "aA==", mimeType: "image/png" }];
-		const pending = f.warning.input({ ...input(), images }, f.ctx);
-		f.context.model = { provider: "openai", id: "different" };
-		answer(choice);
-		expect(await pending).toEqual({ action: "handled" });
-		expect(f.ui.setEditorText).toHaveBeenCalledWith("continue with /tmp/pi-clipboard.png");
-		f.ui.select.mockResolvedValue("Send anyway");
-		expect(await f.warning.input(input("edited draft"), f.ctx)).toEqual({ action: "transform", text: "edited draft", images });
-		f.warning.dispose();
-	});
+	it.each([undefined, "Send anyway"])(
+		"keeps text and images if the model changes while confirmation is open (%s)",
+		async (choice) => {
+			const f = fixture();
+			f.settings({ confirmColdPrompt: "on" });
+			f.warning.restore(f.ctx);
+			let answer!: (value: string | undefined) => void;
+			f.ui.select.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+			const images = [{ type: "image" as const, data: "aA==", mimeType: "image/png" }];
+			const pending = f.warning.input({ ...input(), images }, f.ctx);
+			f.context.model = { provider: "openai", id: "different" };
+			answer(choice);
+			expect(await pending).toEqual({ action: "handled" });
+			expect(f.ui.setEditorText).toHaveBeenCalledWith("continue with /tmp/pi-clipboard.png");
+			f.ui.select.mockResolvedValue("Send anyway");
+			expect(await f.warning.input(input("edited draft"), f.ctx)).toEqual({
+				action: "transform",
+				text: "edited draft",
+				images,
+			});
+			f.warning.dispose();
+		},
+	);
 
 	it("does not send an old prompt after navigation while the confirmation is open", async () => {
 		const f = fixture();
 		f.settings({ confirmColdPrompt: "on" });
 		f.warning.restore(f.ctx);
 		let answer!: (value: string) => void;
-		f.ui.select.mockImplementation(() => new Promise(resolve => answer = resolve));
+		f.ui.select.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
 		const pending = f.warning.input(input(), f.ctx);
 		f.warning.restore(f.ctx);
 		answer("Send anyway");
@@ -232,7 +290,7 @@ describe("optional input confirmation", () => {
 		f.settings({ confirmColdPrompt: "on" });
 		f.warning.restore(f.ctx);
 		let reject!: (reason: Error) => void;
-		f.ui.select.mockImplementation(() => new Promise((_resolve, fail) => reject = fail));
+		f.ui.select.mockImplementation(() => new Promise((_resolve, fail) => (reject = fail)));
 		const pending = f.warning.input(input(), f.ctx);
 		f.warning.restore(f.ctx);
 		reject(new Error("old selector disposed"));
@@ -244,7 +302,9 @@ describe("optional input confirmation", () => {
 		const f = fixture();
 		f.settings({ confirmColdPrompt: "on" });
 		f.warning.restore(f.ctx);
-		f.ui.setEditorText.mockImplementation(() => { throw new Error("editor unavailable"); });
+		f.ui.setEditorText.mockImplementation(() => {
+			throw new Error("editor unavailable");
+		});
 		expect(await f.warning.input(input(), f.ctx)).toEqual({ action: "handled" });
 		f.warning.dispose();
 	});
@@ -255,7 +315,9 @@ describe("optional input confirmation", () => {
 		f.warning.restore(f.ctx);
 		f.ui.select.mockRejectedValue(new Error("UI unavailable"));
 		expect(await f.warning.input(input(), f.ctx)).toEqual({ action: "continue" });
-		f.context.getContextUsage.mockImplementation(() => { throw new Error("usage unavailable"); });
+		f.context.getContextUsage.mockImplementation(() => {
+			throw new Error("usage unavailable");
+		});
 		expect(() => f.warning.refresh(f.ctx)).not.toThrow();
 		f.warning.dispose();
 	});

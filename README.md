@@ -66,7 +66,7 @@ and reversible rather than lossy and final. There is no paraphrase step and noth
 hallucinate. The extension warns you after a second forced compaction. Consider running a handoff
 well before that, at a task finish line.
 
-**4. Handoff.** *(manual, `/fold-handoff`)* Writes a seed file for starting a fresh session: the
+**4. Handoff.** _(manual, `/fold-handoff`)_ Writes a seed file for starting a fresh session: the
 same verbatim index plus the goal you state. Interactively it then offers, behind one
 confirmation, to start the replacement session directly. The seed becomes the first user
 message and the new session opens idle, spending nothing until you type. Decline (or run
@@ -87,7 +87,7 @@ prompt-cache suffix, so mutations are batched at points where that cost is paid 
 - First fold when usage crosses ~45 % of the context window (25 % when telemetry shows the session
   has never had a live cache read, since there is no warm prefix worth protecting).
 - A fold event masks stale `tool_result`/`thinking` blocks outside the protected tail to their
-  deterministic digests, keeping detected risk lines verbatim, and commits them as a *frozen layer*
+  deterministic digests, keeping detected risk lines verbatim, and commits them as a _frozen layer_
   whose bytes never change again. The context head stays byte-identical turn over turn, which is
   what keeps prefix caches warm.
 - Each further event needs at least a ladder step (~12 % of the window) of maskable mass. Crossing
@@ -95,13 +95,13 @@ prompt-cache suffix, so mutations are batched at points where that cost is paid 
 
 ### What folds and what doesn't
 
-| Block kind | Ladder behavior | Folded form |
-|---|---|---|
-| `tool_result` | Masked once stale and outside the protected tail | `name → N lines, ~T tok · first line`, plus detected error/risk lines verbatim |
-| `thinking` | Masked once stale and outside the protected tail | `thought · ~T tok · first line` |
-| `text` (assistant reply) | Never masked | Delivered in full |
-| `tool_call` | Never masked | Delivered in full; the action record carries the implicit decision |
-| `user` | Never masked | Delivered in full |
+| Block kind               | Ladder behavior                                  | Folded form                                                                    |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `tool_result`            | Masked once stale and outside the protected tail | `name → N lines, ~T tok · first line`, plus detected error/risk lines verbatim |
+| `thinking`               | Masked once stale and outside the protected tail | `thought · ~T tok · first line`                                                |
+| `text` (assistant reply) | Never masked                                     | Delivered in full                                                              |
+| `tool_call`              | Never masked                                     | Delivered in full; the action record carries the implicit decision             |
+| `user`                   | Never masked                                     | Delivered in full                                                              |
 
 The protected tail (the newest ~N tokens) is exempt regardless of kind, and a result carrying
 non-text parts such as an image is never substituted.
@@ -203,7 +203,7 @@ append-only session file even once the raw message has left live context.
   forced compaction, irreducible context past half the window, cold with a large carry, and recall
   churn. See [Configuration](#configuration) for settings.
 - **Footer status line (TUI)**: a persistent one-line summary in Pi's footer (`⧉ context-fold ×3
-  · ~41k masked · next fold 3.1k/9.6k`), updated as fold events fire. The line is purely visual.
+· ~41k masked · next fold 3.1k/9.6k`), updated as fold events fire. The line is purely visual.
   It adds nothing to the transcript or the model's context and leaves headless modes unaffected.
   The last segment is the ladder's trigger gauge, showing whichever fold condition is actually
   binding. Below the entry threshold it names it (`next fold at 45%`); once usage is past the
@@ -351,22 +351,22 @@ Precedence per knob: built-in default < saved settings file < environment variab
 keeps working exactly as before and shadows the saved value for that session; the menu flags the
 shadowing when it applies.
 
-| Var | Default | Meaning |
-|---|---|---|
-| `CONTEXTFOLD` | _(on)_ | Master kill switch: `0`/`off` = the extension registers nothing this session. |
-| `CONTEXTFOLD_FOLD_AT` | `0.45` | First fold when usage ≥ this fraction of the context window. |
-| `CONTEXTFOLD_FOLD_STEP` | `0.12` | A fold event must save at least this fraction of the window (spaces events). |
-| `CONTEXTFOLD_COLD_FOLD_AT` | `0.25` | First-fold threshold when no live cache read has ever been observed. |
-| `CONTEXTFOLD_BUDGET_FRACTION` | `0.75` | Budget = this fraction of the context window… |
-| `CONTEXTFOLD_BUDGET_CAP` | `200000` | …capped at this absolute ceiling (attention degrades at absolute depth). `0`/`off` disables. |
-| `CONTEXTFOLD_TAIL` | `20000` | Protected-tail target: the newest ~N tokens never fold (clamped to half the budget). |
-| `CONTEXTFOLD_COMPACT` | `det` | Hard-compaction answer: `det` = deterministic seed-index summary; `native` = Pi stock. |
-| `CONTEXTFOLD_FOOTER_FORMAT` | `full` | Footer status line: `full` = count, masked tokens, and the trigger gauge; `compact` = count and warnings only. |
-| `CONTEXTFOLD_RECON_TOKENS` | `18000` | Reconstruction estimate used by the reset flag (input-token equivalents). |
-| `CONTEXTFOLD_CACHE_IDLE_MINUTES` | `30` | Cache inactivity warning threshold; `off` or `0` disables prediction and send confirmation. |
-| `CONTEXTFOLD_CONFIRM_COLD_PROMPT` | `off` | `on` enables interactive pre-request confirmation. |
-| `CONTEXTFOLD_DEBUG` | _(off)_ | One-line fold/cache summary to stderr each turn. |
-| `CONTEXTFOLD_DUMP` | _(unset)_ | Debug/e2e seam: write each turn's outgoing (folded) view to this JSON path. |
+| Var                               | Default   | Meaning                                                                                                        |
+| --------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `CONTEXTFOLD`                     | _(on)_    | Master kill switch: `0`/`off` = the extension registers nothing this session.                                  |
+| `CONTEXTFOLD_FOLD_AT`             | `0.45`    | First fold when usage ≥ this fraction of the context window.                                                   |
+| `CONTEXTFOLD_FOLD_STEP`           | `0.12`    | A fold event must save at least this fraction of the window (spaces events).                                   |
+| `CONTEXTFOLD_COLD_FOLD_AT`        | `0.25`    | First-fold threshold when no live cache read has ever been observed.                                           |
+| `CONTEXTFOLD_BUDGET_FRACTION`     | `0.75`    | Budget = this fraction of the context window…                                                                  |
+| `CONTEXTFOLD_BUDGET_CAP`          | `200000`  | …capped at this absolute ceiling (attention degrades at absolute depth). `0`/`off` disables.                   |
+| `CONTEXTFOLD_TAIL`                | `20000`   | Protected-tail target: the newest ~N tokens never fold (clamped to half the budget).                           |
+| `CONTEXTFOLD_COMPACT`             | `det`     | Hard-compaction answer: `det` = deterministic seed-index summary; `native` = Pi stock.                         |
+| `CONTEXTFOLD_FOOTER_FORMAT`       | `full`    | Footer status line: `full` = count, masked tokens, and the trigger gauge; `compact` = count and warnings only. |
+| `CONTEXTFOLD_RECON_TOKENS`        | `18000`   | Reconstruction estimate used by the reset flag (input-token equivalents).                                      |
+| `CONTEXTFOLD_CACHE_IDLE_MINUTES`  | `30`      | Cache inactivity warning threshold; `off` or `0` disables prediction and send confirmation.                    |
+| `CONTEXTFOLD_CONFIRM_COLD_PROMPT` | `off`     | `on` enables interactive pre-request confirmation.                                                             |
+| `CONTEXTFOLD_DEBUG`               | _(off)_   | One-line fold/cache summary to stderr each turn.                                                               |
+| `CONTEXTFOLD_DUMP`                | _(unset)_ | Debug/e2e seam: write each turn's outgoing (folded) view to this JSON path.                                    |
 
 The **Cache inactivity warning (minutes)** menu row names the selected Pi provider. Edits to
 that row save a provider-specific override. Unconfigured providers use the fallback above.
@@ -378,12 +378,12 @@ The saved JSON supports a global fallback and provider overrides, for example:
 
 ```json
 {
-  "cacheIdleMinutes": 30,
-  "providerCacheIdleMinutes": {
-    "openai": 30,
-    "my-provider": 10
-  },
-  "confirmColdPrompt": "off"
+	"cacheIdleMinutes": 30,
+	"providerCacheIdleMinutes": {
+		"openai": 30,
+		"my-provider": 10
+	},
+	"confirmColdPrompt": "off"
 }
 ```
 

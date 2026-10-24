@@ -65,7 +65,9 @@ describe("span recall (churn guard)", () => {
 		const messages: AgentMessage[] = [user("flood")];
 		for (let i = 0; i < 6; i++) {
 			messages.push(assistantWithCalls([{ id: `f${i}`, name: "read" }]));
-		messages.push(toolResult(`f${i}`, Array.from({ length: 500 }, (_, j) => `match line ${j}`).join("\n"), "read"));
+			messages.push(
+				toolResult(`f${i}`, Array.from({ length: 500 }, (_, j) => `match line ${j}`).join("\n"), "read"),
+			);
 		}
 		messages.push(user("tail"));
 		e.process(messages, { contextWindow: 18_000, tokens: null });

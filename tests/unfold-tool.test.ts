@@ -35,7 +35,11 @@ function ledgerBacked(): { tools: Map<string, StubTool>; code: string } {
 	});
 
 	const engine = new ContextFoldEngine(new FoldLadderPolicy(), { tailTarget: 100 }, registry);
-	const messages: AgentMessage[] = [user("read it"), assistantWithCalls([{ id: "c0", name: "read" }]), toolResult("c0", content)];
+	const messages: AgentMessage[] = [
+		user("read it"),
+		assistantWithCalls([{ id: "c0", name: "read" }]),
+		toolResult("c0", content),
+	];
 	engine.attachLedger(new LedgerReader(() => messages.map((m) => ({ type: "message", message: m }))));
 	const tools = new Map<string, StubTool>();
 	registerFoldTools({ registerTool: (t: StubTool) => tools.set(t.name, t) } as never, engine, () => {});
@@ -44,11 +48,19 @@ function ledgerBacked(): { tools: Map<string, StubTool>; code: string } {
 
 interface StubTool {
 	name: string;
-	execute(toolCallId: string, params: Record<string, unknown>): Promise<{ content: { type: string; text: string }[]; details?: unknown }>;
+	execute(
+		toolCallId: string,
+		params: Record<string, unknown>,
+	): Promise<{ content: { type: string; text: string }[]; details?: unknown }>;
 }
 
 /** A folded session plus the registered tools, wired exactly as the extension wires them. */
-function foldedSession(): { tools: Map<string, StubTool>; engine: ContextFoldEngine; messages: AgentMessage[]; unfoldedIds: string[] } {
+function foldedSession(): {
+	tools: Map<string, StubTool>;
+	engine: ContextFoldEngine;
+	messages: AgentMessage[];
+	unfoldedIds: string[];
+} {
 	const engine = new ContextFoldEngine(new FoldLadderPolicy(), { tailTarget: 100 }, new MapFoldRegistry());
 	const messages: AgentMessage[] = [user("build the thing")];
 	for (let i = 0; i < 8; i++) {
@@ -60,7 +72,9 @@ function foldedSession(): { tools: Map<string, StubTool>; engine: ContextFoldEng
 
 	const tools = new Map<string, StubTool>();
 	const unfoldedIds: string[] = [];
-	registerFoldTools({ registerTool: (t: StubTool) => tools.set(t.name, t) } as never, engine, (ids) => unfoldedIds.push(...ids));
+	registerFoldTools({ registerTool: (t: StubTool) => tools.set(t.name, t) } as never, engine, (ids) =>
+		unfoldedIds.push(...ids),
+	);
 	return { tools, engine, messages, unfoldedIds };
 }
 
@@ -90,12 +104,16 @@ describe("recall tool", () => {
 		expect(text(res)).not.toContain("SPECIFIC_NEEDLE_XYZ"); // line 199 is past the cap
 		expect((res.details as { recalled: string[] }).recalled).toEqual([needleCode()]);
 
-		const sliced = await tools.get("recall_folded")!.execute("t2", { codes: [needleCode()], grep: "SPECIFIC_NEEDLE_XYZ" });
+		const sliced = await tools
+			.get("recall_folded")!
+			.execute("t2", { codes: [needleCode()], grep: "SPECIFIC_NEEDLE_XYZ" });
 		expect(text(sliced)).toContain("SPECIFIC_NEEDLE_XYZ");
 
 		// Read-only: the block is still folded in the next outgoing view.
 		const after = engine.process(messages, { contextWindow: 80_000, tokens: null });
-		const block = after.find((m) => (m as { toolCallId?: string }).toolCallId === "c0") as { content: { text: string }[] };
+		const block = after.find((m) => (m as { toolCallId?: string }).toolCallId === "c0") as {
+			content: { text: string }[];
+		};
 		expect(block.content[0].text).toContain("FOLDED");
 	});
 
@@ -144,7 +162,9 @@ describe("recall tool", () => {
 
 	it("accepts the full {#code FOLDED} tag, not just the bare code", async () => {
 		const { tools } = foldedSession();
-		const res = await tools.get("recall_folded")!.execute("t1", { codes: [`{#${needleCode()} FOLDED}`], grep: "SPECIFIC_NEEDLE_XYZ" });
+		const res = await tools
+			.get("recall_folded")!
+			.execute("t1", { codes: [`{#${needleCode()} FOLDED}`], grep: "SPECIFIC_NEEDLE_XYZ" });
 		expect(text(res)).toContain("SPECIFIC_NEEDLE_XYZ");
 	});
 });
@@ -172,7 +192,9 @@ describe("unfold tool", () => {
 		expect(unfoldedIds).toEqual(["r:c0"]);
 
 		const after = engine.process(messages, { contextWindow: 80_000, tokens: null });
-		const block = after.find((m) => (m as { toolCallId?: string }).toolCallId === "c0") as { content: { text: string }[] };
+		const block = after.find((m) => (m as { toolCallId?: string }).toolCallId === "c0") as {
+			content: { text: string }[];
+		};
 		expect(block.content[0].text).toContain("SPECIFIC_NEEDLE_XYZ");
 	});
 
@@ -182,7 +204,9 @@ describe("unfold tool", () => {
 
 		// Squeeze hard: renewed pressure must not undo a deliberate agent decision.
 		const after = engine.process(messages, { contextWindow: 12_000, tokens: null });
-		const block = after.find((m) => (m as { toolCallId?: string }).toolCallId === "c0") as { content: { text: string }[] };
+		const block = after.find((m) => (m as { toolCallId?: string }).toolCallId === "c0") as {
+			content: { text: string }[];
+		};
 		expect(block.content[0].text).toContain("SPECIFIC_NEEDLE_XYZ");
 	});
 

@@ -111,8 +111,9 @@ describe("seed-index extraction", () => {
 		expect(result.errors).toHaveLength(24);
 		expect(result.errors[0]).toBe("Error: MARKER_16");
 		expect(result.errors.at(-1)).toBe("Error: MARKER_39");
-		expect(extractCompactionIndex(linearize([user("preserve a recovered request")])).userMessages)
-			.toEqual([{ turn: 1, firstLine: "preserve a recovered request" }]);
+		expect(extractCompactionIndex(linearize([user("preserve a recovered request")])).userMessages).toEqual([
+			{ turn: 1, firstLine: "preserve a recovered request" },
+		]);
 	});
 
 	it("assembles a complete v2 record", () => {

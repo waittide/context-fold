@@ -81,9 +81,7 @@ export interface ContextFrame {
 type ContextFrameInput = number | null | ContextFrame;
 
 function normalizeContextFrame(input: ContextFrameInput): ContextFrame {
-	return typeof input === "number" || input === null
-		? { contextWindow: input, tokens: null }
-		: input;
+	return typeof input === "number" || input === null ? { contextWindow: input, tokens: null } : input;
 }
 
 /** Walk back from the newest block, protecting the newest ~`target` tokens (≤1.25× overflow cap). */
@@ -264,18 +262,31 @@ export class ContextFoldEngine {
 	 * host-reported context window; returns the rewritten array to send. Pure with respect to the
 	 * input (applyPlan clones touched messages); mutates only this engine's instance memory.
 	 */
-	process(messages: AgentMessage[], context: ContextFrameInput, revisions: ReadonlyMap<string, string> = new Map()): AgentMessage[] {
+	process(
+		messages: AgentMessage[],
+		context: ContextFrameInput,
+		revisions: ReadonlyMap<string, string> = new Map(),
+	): AgentMessage[] {
 		const blocks = reviseBlocks(linearize(messages), revisions);
 		// Refresh the snapshot for the unfold/recall tool (full content — folding never mutates it).
 		this.snapshot = new Map(blocks.map((b) => [b.id, b] as const));
 		this.pruneCaches(blocks);
-		const firstDelivery = new Set([...firstDeliveryResultIds(messages)].map(id => revisions.get(id) ?? id));
+		const firstDelivery = new Set([...firstDeliveryResultIds(messages)].map((id) => revisions.get(id) ?? id));
 
 		const frame = normalizeContextFrame(context);
 
 		const frozenOps = this.computeFrozenOps(blocks);
 		const { cw, budget, tailTarget, protectFrom } = this.frame(blocks, frame.contextWindow, frozenOps);
-		const view = this.buildView(blocks, protectFrom, budget, cw, tailTarget, frozenOps, frame.tokens, firstDelivery);
+		const view = this.buildView(
+			blocks,
+			protectFrom,
+			budget,
+			cw,
+			tailTarget,
+			frozenOps,
+			frame.tokens,
+			firstDelivery,
+		);
 
 		const cmds = this.policy.conduct(view);
 
@@ -303,7 +314,11 @@ export class ContextFoldEngine {
 		let committedOps: FoldOp[] = [];
 		if (ops.length > 0) {
 			const used = frame.tokens ?? view.liveTokens;
-			committedOps = this.commitLayer(ops, blocks, { tokens: used, contextWindow: cw, fraction: cw > 0 ? used / cw : 0 });
+			committedOps = this.commitLayer(ops, blocks, {
+				tokens: used,
+				contextWindow: cw,
+				fraction: cw > 0 ? used / cw : 0,
+			});
 		}
 
 		// Frozen bytes outrank any late policy op for the same id (defense in depth — candidates
@@ -325,7 +340,10 @@ export class ContextFoldEngine {
 
 		// The wire keeps Pi's message metadata; only fold identities carry revision suffixes.
 		const originalIds = new Map([...revisions].map(([original, revised]) => [revised, original]));
-		return applyPlan(messages, allOps.map(op => ({ ...op, id: originalIds.get(op.id) ?? op.id })));
+		return applyPlan(
+			messages,
+			allOps.map((op) => ({ ...op, id: originalIds.get(op.id) ?? op.id })),
+		);
 	}
 
 	/**
@@ -336,11 +354,7 @@ export class ContextFoldEngine {
 	 * to change. One layer per event, numbered from 1 — the seq is the seed index's key, so it must
 	 * never repeat.
 	 */
-	private commitLayer(
-		ops: FoldOp[],
-		blocks: WireBlock[],
-		usage: FoldEventReport["usage"],
-	): FoldOp[] {
+	private commitLayer(ops: FoldOp[], blocks: WireBlock[], usage: FoldEventReport["usage"]): FoldOp[] {
 		const entries = ops
 			.filter((op) => !this.frozenById.has(op.id))
 			.map((op) => ({ id: op.id, digestText: op.digestText }));
@@ -368,7 +382,8 @@ export class ContextFoldEngine {
 
 		this.lastLayerSeq = layer.seq;
 		for (const entry of kept) this.frozenById.set(entry.id, entry.digestText);
-		if (this.cfg.debug) process.stderr.write(`[context-fold] layer ${layer.seq} committed (${kept.length} blocks frozen)\n`);
+		if (this.cfg.debug)
+			process.stderr.write(`[context-fold] layer ${layer.seq} committed (${kept.length} blocks frozen)\n`);
 		return kept;
 	}
 
@@ -409,7 +424,10 @@ export class ContextFoldEngine {
 	 * hard compaction because the ledger is append-only. A block the ledger cannot serve becomes a
 	 * typed error naming the code rather than an exception.
 	 */
-	resolveRecall(codes: string[], opts: RecallOptions = {}): { matches: CodeMatch[]; missing: string[]; errors: CodeError[] } {
+	resolveRecall(
+		codes: string[],
+		opts: RecallOptions = {},
+	): { matches: CodeMatch[]; missing: string[]; errors: CodeError[] } {
 		this.recallCallCount++;
 		for (const raw of codes) {
 			const c = normalizeCode(raw);
@@ -435,7 +453,8 @@ export class ContextFoldEngine {
 				const located = this.ledger?.blockById(entry.blockId);
 				if (located && (entry.sha256 === undefined || sha256Hex(located.text) === entry.sha256)) {
 					const { text, note } = this.recallFromLedger(entry, located.text, opts);
-					const verifyNote = entry.sha256 === undefined ? "unverified (legacy record without a fold-time sha256)" : "";
+					const verifyNote =
+						entry.sha256 === undefined ? "unverified (legacy record without a fold-time sha256)" : "";
 					matches.push({
 						code,
 						label: `${entry.tool} · ledger`,
@@ -688,7 +707,12 @@ export class ContextFoldEngine {
 	 * frozen or already-emitted id is dropped. Defense in depth — the policy already enforces
 	 * these, but the wire re-checks so a bad command can never corrupt context.
 	 */
-	private lower(commands: FoldCommand[], blocks: WireBlock[], protectFrom: number, firstDelivery: ReadonlySet<string>): FoldOp[] {
+	private lower(
+		commands: FoldCommand[],
+		blocks: WireBlock[],
+		protectFrom: number,
+		firstDelivery: ReadonlySet<string>,
+	): FoldOp[] {
 		const byId = new Map(blocks.map((b) => [b.id, b] as const));
 		const protectedAt = (id: string): boolean => {
 			const b = byId.get(id);
@@ -775,7 +799,8 @@ const GREP_LINE_CHAR_CAP = 320;
 function sliceByLines(content: string, spec: string, source: string): { text: string; note?: string } {
 	const m = /^\s*(\d+)\s*-\s*(\d+)\s*$/.exec(spec);
 	const lines = content.split("\n");
-	if (!m) return { text: "", note: `malformed lines="${spec}" (want "start-end", e.g. lines=40-80) — nothing returned` };
+	if (!m)
+		return { text: "", note: `malformed lines="${spec}" (want "start-end", e.g. lines=40-80) — nothing returned` };
 	const a = Math.max(1, parseInt(m[1], 10));
 	const b = Math.min(lines.length, parseInt(m[2], 10));
 	if (a > b) return { text: "", note: `empty range ${a}-${b} (${source} has ${lines.length} lines)` };
@@ -843,7 +868,8 @@ function grepContent(haystack: string, term: string, source: string): { text: st
 		// visible even at char 30,000 of a one-line flood.
 		hits.push(`${i + 1}: ${clipLineTo(linesArr[i], GREP_LINE_CHAR_CAP, idx)}`);
 	}
-	if (hits.length === 0) return { text: "", note: `no lines match "${term}" (searched ${source}, ${linesArr.length} lines)` };
+	if (hits.length === 0)
+		return { text: "", note: `no lines match "${term}" (searched ${source}, ${linesArr.length} lines)` };
 	const kept: string[] = [];
 	let tokens = 0;
 	for (const h of hits) {

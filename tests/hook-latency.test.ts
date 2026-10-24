@@ -18,7 +18,12 @@ function benchSession(n: number): AgentMessage[] {
 	const out: AgentMessage[] = [user("start the project")];
 	for (let i = 0; i < n; i++) {
 		out.push(user(`step ${i}: read a file`));
-		out.push(assistantWithCalls([{ id: `c${i}`, name: "read" }], { text: `reading file ${i}`, thinking: `plan for file ${i}` }));
+		out.push(
+			assistantWithCalls([{ id: `c${i}`, name: "read" }], {
+				text: `reading file ${i}`,
+				thinking: `plan for file ${i}`,
+			}),
+		);
 		out.push(bigResult(`c${i}`, 120));
 	}
 	return out;

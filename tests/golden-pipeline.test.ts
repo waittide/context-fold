@@ -32,7 +32,9 @@ function sha(s: string): string {
 function fixedSession(): AgentMessage[] {
 	const messages: AgentMessage[] = [user("find the capacity limit in the dump")];
 	for (let i = 0; i < 7; i++) {
-		messages.push(assistantWithCalls([{ id: `c${i}`, name: "read" }], { text: `reading ${i}`, thinking: `plan step ${i}` }));
+		messages.push(
+			assistantWithCalls([{ id: `c${i}`, name: "read" }], { text: `reading ${i}`, thinking: `plan step ${i}` }),
+		);
 		messages.push(bigResult(`c${i}`, 400));
 	}
 	messages.push(assistantWithCalls([{ id: "cx", name: "bash", args: { cmd: "npx vitest run" } }]));

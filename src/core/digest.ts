@@ -130,7 +130,8 @@ const RISK_LINE_CLIP = 200;
 function lineRisk(line: string): { risk: boolean; error: boolean } {
 	const c = categorize(line);
 	const error = c.errors.length > 0;
-	const risk = error || c.exact_values.length > 0 || c.decisions.length > 0 || c.commands.length > 0 || c.paths.length > 0;
+	const risk =
+		error || c.exact_values.length > 0 || c.decisions.length > 0 || c.commands.length > 0 || c.paths.length > 0;
 	return { risk, error };
 }
 

@@ -30,7 +30,10 @@ class FakeLedger implements EntryAppender {
 }
 
 function flood(tag: string): string {
-	return Array.from({ length: 300 }, (_, i) => `row ${i}: ${tag} bulky tabular content spanning the terminal width for size`).join("\n");
+	return Array.from(
+		{ length: 300 },
+		(_, i) => `row ${i}: ${tag} bulky tabular content spanning the terminal width for size`,
+	).join("\n");
 }
 
 function twoReadSession(a: string, b: string): AgentMessage[] {
@@ -69,7 +72,15 @@ describe("fold record round-trip", () => {
 		// Legacy records carry spool baggage and no sha; restore keeps only ledger-relevant fields.
 		ledger.appendEntry(FOLD_CUSTOM_TYPE, {
 			kind: "gate",
-			entry: { blockId: "r:c2", code: "bbb", tool: "read", isError: false, bytes: 2, spoolPath: "/x/bbb.json", dedupOf: "aaa" },
+			entry: {
+				blockId: "r:c2",
+				code: "bbb",
+				tool: "read",
+				isError: false,
+				bytes: 2,
+				spoolPath: "/x/bbb.json",
+				dedupOf: "aaa",
+			},
 		});
 		ledger.appendEntry(FOLD_CUSTOM_TYPE, {
 			kind: "spool",
@@ -117,7 +128,11 @@ describe("resume restores folds and recall", () => {
 		const messages = twoReadSession(a, b);
 		const blocks = linearize(messages);
 		const ledger = new FakeLedger();
-		for (const [callId, content] of [["c1", a], ["c2", b]] as const) recordFoldEntry(ledger, foldEntry(callId, content));
+		for (const [callId, content] of [
+			["c1", a],
+			["c2", b],
+		] as const)
+			recordFoldEntry(ledger, foldEntry(callId, content));
 		recordLayer(ledger, {
 			seq: 1,
 			entries: blocks
@@ -149,7 +164,14 @@ describe("resume restores folds and recall", () => {
 		const ledger = new FakeLedger();
 		ledger.appendEntry(FOLD_CUSTOM_TYPE, {
 			kind: "spool",
-			entry: { blockId: "r:c1", code: foldCode("r:c1"), tool: "read", isError: false, bytes: 42, spoolPath: "/gone/x.json" },
+			entry: {
+				blockId: "r:c1",
+				code: foldCode("r:c1"),
+				tool: "read",
+				isError: false,
+				bytes: 42,
+				spoolPath: "/gone/x.json",
+			},
 		});
 		const restored = restoreFoldState(ledger.entries);
 		const registry = new MapFoldRegistry();

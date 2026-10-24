@@ -14,8 +14,24 @@
 import { safeSlice } from "../tokens";
 
 const VALUE_STOPWORDS = new Set([
-	"the", "and", "for", "this", "that", "with", "from", "true", "false", "null",
-	"const", "let", "var", "type", "return", "import", "export", "function",
+	"the",
+	"and",
+	"for",
+	"this",
+	"that",
+	"with",
+	"from",
+	"true",
+	"false",
+	"null",
+	"const",
+	"let",
+	"var",
+	"type",
+	"return",
+	"import",
+	"export",
+	"function",
 ]);
 
 const PER_BLOCK_CAP = 3;

@@ -38,7 +38,8 @@ import { type WireBlock, isDurableId } from "./block";
  * Members are keyed by durable id; a turn whose members are not all durably identifiable is
  * returned intact and the caller simply never folds them (fail-open).
  */
-export function computeStrictEchoGroups(blocks: WireBlock[]): string[][] {	const resultIndexByCallId = new Map<string, number>();
+export function computeStrictEchoGroups(blocks: WireBlock[]): string[][] {
+	const resultIndexByCallId = new Map<string, number>();
 	blocks.forEach((b, i) => {
 		if (b.kind === "tool_result" && typeof b.callId === "string" && b.callId) {
 			if (!resultIndexByCallId.has(b.callId)) resultIndexByCallId.set(b.callId, i);
@@ -130,7 +131,10 @@ export function computeStrictEchoWithdrawals(blocks: WireBlock[], foldedIds: Rea
 }
 
 /** How many strict-echo groups exist and how many are currently folded — for status reporting. */
-export function strictEchoStats(blocks: WireBlock[], foldedIds: ReadonlySet<string>): { groups: number; foldedGroups: number } {
+export function strictEchoStats(
+	blocks: WireBlock[],
+	foldedIds: ReadonlySet<string>,
+): { groups: number; foldedGroups: number } {
 	let groups = 0;
 	let foldedGroups = 0;
 	for (const ids of computeStrictEchoGroups(blocks)) {

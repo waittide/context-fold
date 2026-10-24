@@ -194,7 +194,11 @@ describe("discrete fold events", () => {
 
 	it("never masks a tool result before its first provider delivery", () => {
 		const { e, committed } = ladderEngine({ absoluteTokenCap: 1_000, tailTarget: 0 });
-		const messages: AgentMessage[] = [user("read it"), assistantWithCalls([{ id: "fresh", name: "read" }]), bigResult("fresh", 500)];
+		const messages: AgentMessage[] = [
+			user("read it"),
+			assistantWithCalls([{ id: "fresh", name: "read" }]),
+			bigResult("fresh", 500),
+		];
 
 		const first = e.process(messages, { contextWindow: 80_000, tokens: null });
 		expect(resultText(first, "fresh")).not.toContain("FOLDED");
@@ -210,7 +214,10 @@ describe("discrete fold events", () => {
 		const { e, committed } = ladderEngine({ absoluteTokenCap: 1_000, tailTarget: 0 });
 		const messages: AgentMessage[] = [
 			user("read both"),
-			assistantWithCalls([{ id: "p1", name: "read" }, { id: "p2", name: "read" }]),
+			assistantWithCalls([
+				{ id: "p1", name: "read" },
+				{ id: "p2", name: "read" },
+			]),
 			bigResult("p1", 300),
 			bigResult("p2", 300),
 		];
@@ -230,10 +237,19 @@ describe("discrete fold events", () => {
 		const hostile: FoldPolicy = {
 			id: "hostile",
 			label: "hostile",
-			conduct: (view) => [{ kind: "fold", ids: view.blocks.filter((block) => block.kind === "tool_result").map((block) => block.id) }],
+			conduct: (view) => [
+				{
+					kind: "fold",
+					ids: view.blocks.filter((block) => block.kind === "tool_result").map((block) => block.id),
+				},
+			],
 		};
 		const engine = new ContextFoldEngine(hostile, { tailTarget: 0 }, new MapFoldRegistry());
-		const messages: AgentMessage[] = [user("read it"), assistantWithCalls([{ id: "fresh", name: "read" }]), bigResult("fresh", 300)];
+		const messages: AgentMessage[] = [
+			user("read it"),
+			assistantWithCalls([{ id: "fresh", name: "read" }]),
+			bigResult("fresh", 300),
+		];
 
 		const out = engine.process(messages, { contextWindow: 80_000, tokens: null });
 		expect(resultText(out, "fresh")).not.toContain("FOLDED");
@@ -263,7 +279,6 @@ describe("discrete fold events", () => {
 		expect(committed.length).toBe(0);
 	});
 });
-
 
 describe("reversibility", () => {
 	it("recall and unfold still resolve a ladder-masked block", () => {

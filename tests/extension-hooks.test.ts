@@ -27,7 +27,10 @@ interface Entry {
 /** A stub ExtensionAPI that keeps every registration so the test can invoke it. */
 function stubPi() {
 	const hooks = new Map<string, Hook>();
-	const tools = new Map<string, { execute(id: string, p: Record<string, unknown>): Promise<{ content: { text: string }[] }> }>();
+	const tools = new Map<
+		string,
+		{ execute(id: string, p: Record<string, unknown>): Promise<{ content: { text: string }[] }> }
+	>();
 	const commands = new Map<string, { handler(args: unknown, ctx: unknown): Promise<void> }>();
 	const entries: Entry[] = [];
 	return {
@@ -90,8 +93,14 @@ function ctxFor(
 			sessionManager: {
 				getSessionDir: () => dir,
 				getSessionId: () => opts.sessionId ?? "s1",
-				getEntries: () => [...(opts.messages ?? []).map((m) => ({ type: "message", message: m })), ...(opts.entries ?? [])],
-				getBranch: () => [...(opts.messages ?? []).map((m) => ({ type: "message", message: m })), ...(opts.entries ?? [])],
+				getEntries: () => [
+					...(opts.messages ?? []).map((m) => ({ type: "message", message: m })),
+					...(opts.entries ?? []),
+				],
+				getBranch: () => [
+					...(opts.messages ?? []).map((m) => ({ type: "message", message: m })),
+					...(opts.entries ?? []),
+				],
 			},
 			getContextUsage: () => opts.usage ?? { contextWindow: 200_000, tokens: null },
 			ui: {
@@ -210,7 +219,9 @@ describe.skipIf(!PI_PRESENT)("session_start hook", () => {
 		const resumedCtx = ctxFor({ entries: ledger, usage: { contextWindow: 80_000, tokens: null } }).ctx;
 		await resumed.hooks.get("session_start")!({}, resumedCtx);
 
-		const out = (await resumed.hooks.get("context_with_system")!({ messages }, resumedCtx)) as { messages: AgentMessage[] };
+		const out = (await resumed.hooks.get("context_with_system")!({ messages }, resumedCtx)) as {
+			messages: AgentMessage[];
+		};
 		expect(JSON.stringify(out.messages)).toContain("FOLDED");
 	});
 
@@ -255,7 +266,14 @@ describe.skipIf(!PI_PRESENT)("/context-fold config command", () => {
 		const file = join(dir, "agent", "context-fold.json");
 		expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({ compact: "native" });
 		const out = await s.hooks.get("session_before_compact")!(
-			{ preparation: { messagesToSummarize: heavySession(), turnPrefixMessages: [], tokensBefore: 40_000, firstKeptEntryId: "e9" } },
+			{
+				preparation: {
+					messagesToSummarize: heavySession(),
+					turnPrefixMessages: [],
+					tokensBefore: 40_000,
+					firstKeptEntryId: "e9",
+				},
+			},
 			ctx,
 		);
 		expect(out).toBeUndefined();
@@ -346,7 +364,14 @@ describe.skipIf(!PI_PRESENT)("session_before_compact hook", () => {
 		const { ctx } = ctxFor({ usage: { contextWindow: 80_000, tokens: null }, messages: prefix });
 
 		const out = (await s.hooks.get("session_before_compact")!(
-			{ preparation: { messagesToSummarize: [], turnPrefixMessages: prefix, tokensBefore: 40_000, firstKeptEntryId: "e9" } },
+			{
+				preparation: {
+					messagesToSummarize: [],
+					turnPrefixMessages: prefix,
+					tokensBefore: 40_000,
+					firstKeptEntryId: "e9",
+				},
+			},
 			ctx,
 		)) as { compaction: { summary: string } };
 
@@ -368,7 +393,14 @@ describe.skipIf(!PI_PRESENT)("session_before_compact hook", () => {
 		const { ctx } = ctxFor();
 
 		const out = await s.hooks.get("session_before_compact")!(
-			{ preparation: { messagesToSummarize: [], turnPrefixMessages: [], tokensBefore: 1, firstKeptEntryId: "e1" } },
+			{
+				preparation: {
+					messagesToSummarize: [],
+					turnPrefixMessages: [],
+					tokensBefore: 1,
+					firstKeptEntryId: "e1",
+				},
+			},
 			ctx,
 		);
 		expect(out).toBeUndefined();
@@ -380,7 +412,10 @@ describe.skipIf(!PI_PRESENT)("message_end hook and the status command", () => {
 		const s = await load();
 		const { ctx, notices } = ctxFor();
 
-		await s.hooks.get("message_end")!({ message: { role: "assistant", usage: { input: 1000, cacheRead: 3000, cacheWrite: 0, output: 50 } } }, ctx);
+		await s.hooks.get("message_end")!(
+			{ message: { role: "assistant", usage: { input: 1000, cacheRead: 3000, cacheWrite: 0, output: 50 } } },
+			ctx,
+		);
 		await s.commands.get("context-fold")!.handler("", ctx);
 
 		expect(notices.join("\n")).toContain("cache read 3.0k");
@@ -407,7 +442,12 @@ describe.skipIf(!PI_PRESENT)("message_end hook and the status command", () => {
 		}) as typeof process.stderr.write;
 		try {
 			await s.hooks.get("message_end")!(
-				{ message: { role: "assistant", usage: { input: 5_000, cacheRead: 30_000, cacheWrite: 0, output: 50 } } },
+				{
+					message: {
+						role: "assistant",
+						usage: { input: 5_000, cacheRead: 30_000, cacheWrite: 0, output: 50 },
+					},
+				},
 				ctx,
 			);
 			await s.hooks.get("message_end")!(
@@ -440,7 +480,12 @@ describe.skipIf(!PI_PRESENT)("message_end hook and the status command", () => {
 				ctx,
 			);
 			await s.hooks.get("message_end")!(
-				{ message: { role: "assistant", usage: { input: 1_000, cacheRead: 40_000, cacheWrite: 0, output: 50 } } },
+				{
+					message: {
+						role: "assistant",
+						usage: { input: 1_000, cacheRead: 40_000, cacheWrite: 0, output: 50 },
+					},
+				},
 				ctx,
 			);
 			await s.hooks.get("agent_settled")!({}, ctx);
@@ -488,7 +533,12 @@ describe.skipIf(!PI_PRESENT)("message_end hook and the status command", () => {
 		}) as typeof process.stderr.write;
 		try {
 			await s.hooks.get("message_end")!(
-				{ message: { role: "assistant", usage: { input: 5_000, cacheRead: 30_000, cacheWrite: 0, output: 50 } } },
+				{
+					message: {
+						role: "assistant",
+						usage: { input: 5_000, cacheRead: 30_000, cacheWrite: 0, output: 50 },
+					},
+				},
 				ctx,
 			);
 			await s.hooks.get("message_end")!(
@@ -526,7 +576,12 @@ describe.skipIf(!PI_PRESENT)("message_end hook and the status command", () => {
 		}) as typeof process.stderr.write;
 		try {
 			await s.hooks.get("message_end")!(
-				{ message: { role: "assistant", usage: { input: 5_000, cacheRead: 30_000, cacheWrite: 0, output: 50 } } },
+				{
+					message: {
+						role: "assistant",
+						usage: { input: 5_000, cacheRead: 30_000, cacheWrite: 0, output: 50 },
+					},
+				},
 				ctx,
 			);
 			await s.hooks.get("message_end")!(
@@ -536,7 +591,12 @@ describe.skipIf(!PI_PRESENT)("message_end hook and the status command", () => {
 			await s.hooks.get("agent_settled")!({}, ctx);
 
 			await s.hooks.get("message_end")!(
-				{ message: { role: "assistant", usage: { input: 1_000, cacheRead: 40_000, cacheWrite: 0, output: 50 } } },
+				{
+					message: {
+						role: "assistant",
+						usage: { input: 1_000, cacheRead: 40_000, cacheWrite: 0, output: 50 },
+					},
+				},
 				ctx,
 			);
 			await s.hooks.get("agent_settled")!({}, ctx);
@@ -580,7 +640,10 @@ describe.skipIf(!PI_PRESENT)("footer status line", () => {
 
 		// Warnings still show: past the budget with nothing left to mask is the over-budget state.
 		const over = ctxFor({ usage: { contextWindow: 80_000, tokens: 70_000 } });
-		await s.hooks.get("context_with_system")!({ messages: [user("hi"), assistantText("x".repeat(280_000)), user("more")] }, over.ctx);
+		await s.hooks.get("context_with_system")!(
+			{ messages: [user("hi"), assistantText("x".repeat(280_000)), user("more")] },
+			over.ctx,
+		);
 		expect(over.statuses["context-fold"]).toContain("⚠ over budget");
 	});
 
@@ -622,7 +685,10 @@ describe.skipIf(!PI_PRESENT)("footer status line", () => {
 		// with even though usage (50%) is past the 45% threshold. Still interim — a big tool result
 		// next turn would start filling the gauge — so it counts from zero rather than declaring
 		// folding impossible.
-		await s.hooks.get("context_with_system")!({ messages: [user("hi"), assistantText("a long answer"), user("more")] }, ctx);
+		await s.hooks.get("context_with_system")!(
+			{ messages: [user("hi"), assistantText("a long answer"), user("more")] },
+			ctx,
+		);
 		expect(statuses["context-fold"]).toMatch(/next fold 0\/\S+/);
 		expect(statuses["context-fold"]).not.toContain("×");
 	});
@@ -633,7 +699,10 @@ describe.skipIf(!PI_PRESENT)("footer status line", () => {
 		// conversation leaves nothing maskable: the terminal state, not an interim one.
 		const { ctx, statuses } = ctxFor({ usage: { contextWindow: 80_000, tokens: 70_000 } });
 
-		await s.hooks.get("context_with_system")!({ messages: [user("hi"), assistantText("x".repeat(280_000)), user("more")] }, ctx);
+		await s.hooks.get("context_with_system")!(
+			{ messages: [user("hi"), assistantText("x".repeat(280_000)), user("more")] },
+			ctx,
+		);
 		expect(statuses["context-fold"]).toContain("⚠ over budget");
 	});
 
@@ -642,9 +711,14 @@ describe.skipIf(!PI_PRESENT)("footer status line", () => {
 		// A bridged CLI (pi-with-claude) books its whole occupancy as cache read with nothing prefilled,
 		// and its tool-pause responses carry no usage at all.
 		const { ctx, statuses } = ctxFor({ usage: { contextWindow: 80_000, tokens: 70_000 } });
-		const held = (cacheRead: number) => ({ message: { role: "assistant", usage: { input: 0, cacheRead, cacheWrite: 0, output: 50 } } });
+		const held = (cacheRead: number) => ({
+			message: { role: "assistant", usage: { input: 0, cacheRead, cacheWrite: 0, output: 50 } },
+		});
 		await s.hooks.get("message_end")!(held(60_000), ctx);
-		await s.hooks.get("message_end")!({ message: { role: "assistant", usage: { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 } } }, ctx);
+		await s.hooks.get("message_end")!(
+			{ message: { role: "assistant", usage: { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 } } },
+			ctx,
+		);
 		await s.hooks.get("message_end")!(held(70_000), ctx);
 
 		// 70k of 80k is past the 60k budget and heavySession has plenty to mask: the cap branch would fire.
@@ -677,7 +751,9 @@ describe.skipIf(!PI_PRESENT)("footer status line", () => {
 		const bare = ctxFor({ usage: { contextWindow: 80_000, tokens: null } }).ctx as { ui?: unknown };
 		bare.ui = undefined;
 
-		await expect(Promise.resolve(s.hooks.get("context_with_system")!({ messages: heavySession() }, bare))).resolves.toBeTruthy();
+		await expect(
+			Promise.resolve(s.hooks.get("context_with_system")!({ messages: heavySession() }, bare)),
+		).resolves.toBeTruthy();
 	});
 });
 
@@ -709,7 +785,12 @@ describe.skipIf(!PI_PRESENT)("wire watchdog (folds that never reach the provider
 			await foldThenDeferredTurn(s, ctx);
 			// A second deferred turn must not warn again.
 			await s.hooks.get("message_end")!(
-				{ message: { role: "assistant", usage: { input: 5_000, cacheRead: 46_000, cacheWrite: 0, output: 50 } } },
+				{
+					message: {
+						role: "assistant",
+						usage: { input: 5_000, cacheRead: 46_000, cacheWrite: 0, output: 50 },
+					},
+				},
 				ctx,
 			);
 		} finally {
@@ -734,7 +815,12 @@ describe.skipIf(!PI_PRESENT)("wire watchdog (folds that never reach the provider
 		await s.hooks.get("context_with_system")!({ messages: heavySession() }, ctx);
 		// Cache read collapses below the pre-fold prompt: the rewrite reached the wire.
 		await s.hooks.get("message_end")!(
-			{ message: { role: "assistant", usage: { input: 3_000, cacheRead: 12_000, cacheWrite: 25_000, output: 50 } } },
+			{
+				message: {
+					role: "assistant",
+					usage: { input: 3_000, cacheRead: 12_000, cacheWrite: 25_000, output: 50 },
+				},
+			},
 			ctx,
 		);
 
@@ -865,12 +951,20 @@ describe.skipIf(!PI_PRESENT)("model_select resets cache telemetry", () => {
 
 		// Restore fires with a differing previousModel shape on some paths — still no reset.
 		await s.hooks.get("model_select")!(
-			{ model: { provider: "other", id: "big" }, previousModel: { provider: "test", id: "test-model" }, source: "restore" },
+			{
+				model: { provider: "other", id: "big" },
+				previousModel: { provider: "test", id: "test-model" },
+				source: "restore",
+			},
 			ctx,
 		);
 		// Re-selecting the same model is not a change.
 		await s.hooks.get("model_select")!(
-			{ model: { provider: "test", id: "test-model" }, previousModel: { provider: "test", id: "test-model" }, source: "set" },
+			{
+				model: { provider: "test", id: "test-model" },
+				previousModel: { provider: "test", id: "test-model" },
+				source: "set",
+			},
 			ctx,
 		);
 		await s.commands.get("context-fold")!.handler("", ctx);
@@ -967,7 +1061,9 @@ describe.skipIf(!PI_PRESENT)("/fold-handoff confirm-then-switch", () => {
 	it("a cancelled replacement keeps the old ctx live for the manual flow", async () => {
 		const s = await load();
 		const { ctx, notices, replacementNotices, appended, calls } = handoffCtx({
-			hasUI: true, confirmAnswer: true, cancelled: true,
+			hasUI: true,
+			confirmAnswer: true,
+			cancelled: true,
 		});
 
 		await s.commands.get("fold-handoff")!.handler("goal", ctx);
@@ -1038,11 +1134,27 @@ describe.skipIf(!PI_PRESENT)("pre-request warning wiring", () => {
 		const { ctx, notices } = ctxFor({ usage: { contextWindow: 200_000, tokens: 85_000 } });
 		let draft = "";
 		const fullCtx = {
-			...ctx, hasUI: true, mode: "tui", isIdle: () => true,
-			sessionManager: { ...ctx.sessionManager, getBranch: () => [{ type: "message", timestamp: new Date(Date.now() - 31 * 60_000).toISOString(), message: {
-				role: "assistant", provider: "test", model: "test-model", stopReason: "stop", usage: { input: 85_000, output: 0, cacheRead: 0, cacheWrite: 0 },
-			} }] },
-			ui: { ...ctx.ui, setEditorText: (text: string) => draft = text, select: async () => "Keep draft" },
+			...ctx,
+			hasUI: true,
+			mode: "tui",
+			isIdle: () => true,
+			sessionManager: {
+				...ctx.sessionManager,
+				getBranch: () => [
+					{
+						type: "message",
+						timestamp: new Date(Date.now() - 31 * 60_000).toISOString(),
+						message: {
+							role: "assistant",
+							provider: "test",
+							model: "test-model",
+							stopReason: "stop",
+							usage: { input: 85_000, output: 0, cacheRead: 0, cacheWrite: 0 },
+						},
+					},
+				],
+			},
+			ui: { ...ctx.ui, setEditorText: (text: string) => (draft = text), select: async () => "Keep draft" },
 		};
 		await s.hooks.get("session_start")!({}, fullCtx);
 		expect(notices).toContain("cache may have expired: ~85k tok may rebill. Consider /fold-handoff");
@@ -1050,12 +1162,19 @@ describe.skipIf(!PI_PRESENT)("pre-request warning wiring", () => {
 		expect(await s.hooks.get("input")!(event, fullCtx)).toEqual({ action: "handled" });
 		expect(draft).toBe("continue");
 		const choices = ["Cache inactivity warning", "Done"];
-		const menuCtx = { ...fullCtx, ui: { ...fullCtx.ui,
-			select: async (_title: string, options: string[]) => options.find(o => o.startsWith(choices.shift()!)),
-			input: async () => "60",
-		} };
+		const menuCtx = {
+			...fullCtx,
+			ui: {
+				...fullCtx.ui,
+				select: async (_title: string, options: string[]) =>
+					options.find((o) => o.startsWith(choices.shift()!)),
+				input: async () => "60",
+			},
+		};
 		await s.commands.get("context-fold")!.handler("config", menuCtx);
-		expect(JSON.parse(readFileSync(join(dir, "context-fold.json"), "utf8")).providerCacheIdleMinutes).toEqual({ test: 60 });
+		expect(JSON.parse(readFileSync(join(dir, "context-fold.json"), "utf8")).providerCacheIdleMinutes).toEqual({
+			test: 60,
+		});
 		expect(await s.hooks.get("input")!(event, fullCtx)).toEqual({ action: "continue" });
 		await s.hooks.get("session_shutdown")!({}, fullCtx);
 	});
@@ -1064,7 +1183,11 @@ describe.skipIf(!PI_PRESENT)("pre-request warning wiring", () => {
 		const s = await load();
 		const { ctx, notices } = ctxFor();
 		const uiCtx = { ...ctx, hasUI: true };
-		for (let i = 0; i < 2; i++) await s.hooks.get("message_end")!({ message: { role: "assistant", usage: { input: 40_000, cacheRead: 0, cacheWrite: 0 } } }, uiCtx);
+		for (let i = 0; i < 2; i++)
+			await s.hooks.get("message_end")!(
+				{ message: { role: "assistant", usage: { input: 40_000, cacheRead: 0, cacheWrite: 0 } } },
+				uiCtx,
+			);
 		await s.hooks.get("agent_settled")!({}, uiCtx);
 		expect(notices).toContain("session cold: rebilled ~40k tok as fresh input. Consider /fold-handoff");
 	});
@@ -1078,12 +1201,15 @@ describe.skipIf(!PI_PRESENT)("/context-fold menu", () => {
 		const choices = ["Settings", "Protected tail", "Done"];
 		const menus: string[][] = [];
 		await s.commands.get("context-fold")!.handler("", {
-			...ctx, hasUI: true, isIdle: () => true,
-			ui: { ...ctx.ui,
+			...ctx,
+			hasUI: true,
+			isIdle: () => true,
+			ui: {
+				...ctx.ui,
 				select: async (_title: string, options: string[]) => {
 					menus.push(options);
 					const choice = choices.shift();
-					return options.find(option => option.startsWith(choice!));
+					return options.find((option) => option.startsWith(choice!));
 				},
 				input: async () => "5000",
 			},
@@ -1093,30 +1219,45 @@ describe.skipIf(!PI_PRESENT)("/context-fold menu", () => {
 		expect(notices.join("\n")).toContain("Protected tail → 5000 (applied)");
 	});
 
-	it.each(["Status", "Discard retained images"])("routes %s to its existing action", async choice => {
+	it.each(["Status", "Discard retained images"])("routes %s to its existing action", async (choice) => {
 		const s = await load();
 		const { ctx, notices } = ctxFor();
 		await s.commands.get("context-fold")!.handler("", {
-			...ctx, hasUI: true, ui: { ...ctx.ui, select: async () => choice },
+			...ctx,
+			hasUI: true,
+			ui: { ...ctx.ui, select: async () => choice },
 		});
 		expect(notices.join("\n")).toContain(choice === "Status" ? "no usage yet" : "Retained draft images discarded.");
 	});
 
-	it.each([undefined, "Close"])("does nothing when the menu is dismissed (%s)", async choice => {
+	it.each([undefined, "Close"])("does nothing when the menu is dismissed (%s)", async (choice) => {
 		const s = await load();
 		const { ctx, notices } = ctxFor();
 		await s.commands.get("context-fold")!.handler("", {
-			...ctx, hasUI: true, ui: { ...ctx.ui, select: async () => choice },
+			...ctx,
+			hasUI: true,
+			ui: { ...ctx.ui, select: async () => choice },
 		});
 		expect(notices).toEqual([]);
 	});
 
-	it.each([{ args: "status", hasUI: true }, { args: "", hasUI: false }])("keeps direct status/headless use out of the menu ($args, $hasUI)", async ({ args, hasUI }) => {
+	it.each([
+		{ args: "status", hasUI: true },
+		{ args: "", hasUI: false },
+	])("keeps direct status/headless use out of the menu ($args, $hasUI)", async ({ args, hasUI }) => {
 		const s = await load();
 		const { ctx, notices } = ctxFor();
 		let selected = false;
 		await s.commands.get("context-fold")!.handler(args, {
-			...ctx, hasUI, ui: { ...ctx.ui, select: async () => { selected = true; return "Close"; } },
+			...ctx,
+			hasUI,
+			ui: {
+				...ctx.ui,
+				select: async () => {
+					selected = true;
+					return "Close";
+				},
+			},
 		});
 		expect(selected).toBe(false);
 		expect(notices.join("\n")).toContain("no usage yet");
@@ -1126,7 +1267,14 @@ describe.skipIf(!PI_PRESENT)("/context-fold menu", () => {
 		const s = await load();
 		const { ctx, notices } = ctxFor();
 		await s.commands.get("context-fold")!.handler("", {
-			...ctx, hasUI: true, ui: { ...ctx.ui, select: async () => { throw new Error("selector unavailable"); } },
+			...ctx,
+			hasUI: true,
+			ui: {
+				...ctx.ui,
+				select: async () => {
+					throw new Error("selector unavailable");
+				},
+			},
 		});
 		expect(notices.join("\n")).toContain("selector unavailable");
 		expect(notices.join("\n")).toContain("no usage yet");

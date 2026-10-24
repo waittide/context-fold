@@ -44,10 +44,11 @@ function editedMessages(source: LedgerEntryLike, edit?: LedgerEntryLike): AgentM
 	if (edit.replacement === null) return [];
 	if (!edit.replacement) return messages;
 	const replacement = edit.replacement.content;
-	return messages.map(message => {
-		const content = (message.role === "assistant" || message.role === "toolResult") && typeof replacement === "string"
-			? [{ type: "text", text: replacement }]
-			: replacement;
+	return messages.map((message) => {
+		const content =
+			(message.role === "assistant" || message.role === "toolResult") && typeof replacement === "string"
+				? [{ type: "text", text: replacement }]
+				: replacement;
 		return { ...message, content } as AgentMessage;
 	});
 }
@@ -71,7 +72,7 @@ export function contextRevisions(branch: readonly LedgerEntryLike[]): Map<string
 }
 
 export function reviseBlocks(blocks: WireBlock[], revisions: ReadonlyMap<string, string>): WireBlock[] {
-	return blocks.map(b => {
+	return blocks.map((b) => {
 		const id = revisions.get(b.id);
 		// A replacement's content is not the original tool's full-output file.
 		return id ? { ...b, id, fullOutputPath: undefined } : b;
@@ -80,8 +81,11 @@ export function reviseBlocks(blocks: WireBlock[], revisions: ReadonlyMap<string,
 
 /** Re-extract historical evidence from the active branch, including earlier compacted spans.
  * Historical indexes and summaries cannot be filtered reliably after content edits. */
-export function compactionHistory(branch: readonly LedgerEntryLike[], firstKeptEntryId: string): WireBlock[] | undefined {
-	const end = branch.findIndex(e => e.id === firstKeptEntryId);
+export function compactionHistory(
+	branch: readonly LedgerEntryLike[],
+	firstKeptEntryId: string,
+): WireBlock[] | undefined {
+	const end = branch.findIndex((e) => e.id === firstKeptEntryId);
 	if (end < 0) return;
 	const edits = latestEdits(branch);
 	const messages: AgentMessage[] = [];
@@ -106,7 +110,7 @@ export class LedgerReader implements LedgerLookup {
 			// Map insertion order of linearize is chronological, so later entries overwrite.
 			const byId = new Map<string, WireBlock>();
 			for (const b of linearize(messages)) byId.set(b.id, b);
-			const sources = new Map(entries.filter(e => e.id).map(e => [e.id!, e]));
+			const sources = new Map(entries.filter((e) => e.id).map((e) => [e.id!, e]));
 			for (const edit of entries) {
 				if (edit.type !== "context_edit" || !edit.id || !edit.targetId || !edit.replacement) continue;
 				const source = sources.get(edit.targetId);
