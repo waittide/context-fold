@@ -15,7 +15,7 @@
  * imports were retargeted to this port's block model.
  */
 import type { BlockKind, DigestBlock } from "./block";
-import { estTokens, clip, firstLine, safeSlice, BLOCK_OVERHEAD } from "./tokens";
+import { estTokens, clip, firstLine, safeSlice, scrubLoneSurrogates, BLOCK_OVERHEAD } from "./tokens";
 import { categorize } from "./policy/ledger";
 
 /**
@@ -69,7 +69,9 @@ export function digest(b: DigestBlock): string {
 	const cached = digestCache.get(b);
 	if (cached !== undefined) return cached;
 	const body = digestBody(b);
-	const out = FOLDABLE_KINDS.has(b.kind) ? `${foldTag(b.id)} ${body}` : body;
+	// Final belt-and-braces: digests are hand-built from clipped user content, so scrub any
+	// unpaired surrogate before it can reach JSON.stringify as a `\udXXX` escape.
+	const out = scrubLoneSurrogates(FOLDABLE_KINDS.has(b.kind) ? `${foldTag(b.id)} ${body}` : body);
 	digestCache.set(b, out);
 	return out;
 }

@@ -17,7 +17,7 @@ import type { AgentMessage, FoldOp, WireBlock } from "../../core/block";
 import { blockId, linearize, isDurableId } from "../../core/block";
 import { applyPlan } from "../../core/apply";
 import { digest, wireFoldable, foldCode, substTokens } from "../../core/digest";
-import { estTokens, safeSlice, BLOCK_OVERHEAD } from "../../core/tokens";
+import { estTokens, safeSlice, clampWindow, BLOCK_OVERHEAD } from "../../core/tokens";
 import { MapFoldRegistry, type FoldEntry } from "../../core/fold-registry";
 import { reviseBlocks, sha256Hex, type LedgerLookup } from "./ledger";
 import { readFileSync } from "node:fs";
@@ -744,7 +744,7 @@ function clipLineTo(line: string, maxChars: number, around?: number): string {
 		return `${safeSlice(line, maxChars)}…[line clipped: ${line.length} chars — grep=<term> targets content inside it]`;
 	}
 	const start = Math.min(Math.max(0, around - Math.floor(maxChars / 2)), line.length - maxChars);
-	return `[…chars ${start + 1}-${start + maxChars} of ${line.length}…] ${safeSlice(line.slice(start), maxChars)}…`;
+	return `[…chars ${start + 1}-${start + maxChars} of ${line.length}…] ${clampWindow(line, start, start + maxChars)}…`;
 }
 
 /** Max chars a single kept line may occupy inside a capped recall (leaves cap headroom). */
