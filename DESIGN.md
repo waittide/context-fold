@@ -33,6 +33,7 @@ src/
     digest.ts              # the {#code FOLDED} tag, foldCode (FNV-1a), per-kind digests
     contract.ts            # PolicyView / FoldCommand / ViewBlock
     block.ts               # the WireBlock model, linearize(), blockId(), isDurableId()
+    turn-integrity.ts      # strict-echo coupling: signed reasoning stays verbatim under its call
     apply.ts               # applyPlan(messages, ops)
     fold-registry.ts       # folded block id → code, extent, fold-time sha256
     index/seed-index.ts    # deterministic extraction of the seed index record
@@ -250,6 +251,16 @@ session.
 8. **`typebox` and the `@earendil-works/*` packages are peer dependencies, never vendored.** Pi
    injects bundled virtual modules at runtime, so a separately installed copy would not be the one
    the engine uses.
+9. **A signed reasoning block is never folded under a verbatim tool call.** A `thinking` part that
+   carries a provider signature (`thinkingSignature`, set by anthropic-messages) authenticates the
+   text that carried it. Folding the text while the same turn's call stays verbatim produces a
+   request the provider rejects — unlike an orphaned pair, which `applyPlan`'s in-place
+   substitution makes unrepresentable. The engine runs `computeStrictEchoWithdrawals` after lowering
+   and withdraws the whole coupled turn. Unsigned reasoning (providers that echo bare reasoning
+   text or strip prior thinking) is not gated: nothing ties its old text to the surviving call.
+10. **No folded text may end on a stranded UTF-16 surrogate.** Every clipping helper goes through
+    `clampPrefix`/`clampWindow`, and `digest()` scrubs at its single authoring point; a lone
+    surrogate becomes a permanent request-encoding failure at the gateway.
 
 ---
 
@@ -259,3 +270,10 @@ The pure core is derived from [Accordion](https://github.com/a-Fig/Accordion) (p
 `0c22434`), stripped of all Svelte/Tauri/browser coupling and hardened since. `digest.ts` and
 `tokens.ts` are close to verbatim, and `applyPlan` and the block model are adapted. The discrete
 fold ladder, seed index, ledger-backed recovery, and advisor layers are original to this project.
+
+`tokens.ts`'s surrogate-safety helpers (`clampPrefix`, `clampWindow`, `scrubLoneSurrogates`) and
+`turn-integrity.ts` are adapted from [billion-context](https://github.com/ranxianglei/billion-context)
+(MIT, Copyright (c) 2026 ranxianglei) — `kernel/src/truncate.ts`, `kernel/src/turn-integrity.ts`,
+and `kernel/src/reasoning-pairs.ts`. `turn-integrity.ts` narrows that project's whole-turn
+atomicity to the signed-reasoning coupling, because a whole-turn rule would disable thinking folds
+in every tool-using turn here.
