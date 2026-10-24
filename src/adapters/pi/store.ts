@@ -19,6 +19,7 @@ import { applyPlan } from "../../core/apply";
 import { digest, wireFoldable, foldCode, substTokens } from "../../core/digest";
 import { estTokens, safeSlice, clampWindow, BLOCK_OVERHEAD } from "../../core/tokens";
 import { MapFoldRegistry, type FoldEntry } from "../../core/fold-registry";
+import { computeStrictEchoWithdrawals, strictEchoStats } from "../../core/turn-integrity";
 import { reviseBlocks, sha256Hex, type LedgerLookup } from "./ledger";
 import { readFileSync } from "node:fs";
 
@@ -278,7 +279,25 @@ export class ContextFoldEngine {
 
 		const cmds = this.policy.conduct(view);
 
-		const ops: FoldOp[] = cmds != null && cmds.length > 0 ? this.lower(cmds, blocks, protectFrom, firstDelivery) : [];
+		let ops: FoldOp[] = cmds != null && cmds.length > 0 ? this.lower(cmds, blocks, protectFrom, firstDelivery) : [];
+
+		// Strict-echo integrity gate: never rewrite a reasoning run that produced a tool call while
+		// leaving that call verbatim. Providers that echo reasoning back (DeepSeek's
+		// `reasoning_content`, Anthropic's signed thinking blocks) reject the rebuilt request.
+		// Runs after lowering so it sees the final op set; withdraws whole turns, never fragments.
+		if (ops.length > 0) {
+			const withdrawn = computeStrictEchoWithdrawals(blocks, new Set(ops.map((o) => o.id)));
+			if (withdrawn.size > 0) {
+				ops = ops.filter((o) => !withdrawn.has(o.id));
+				for (const id of withdrawn) this.foldRejected.add(id);
+				if (this.cfg.debug) {
+					const stats = strictEchoStats(blocks, new Set(withdrawn));
+					console.error(
+						`[context-fold] strict-echo gate withdrew ${withdrawn.size} id(s) across ${stats.foldedGroups} turn(s)`,
+					);
+				}
+			}
+		}
 
 		// Commit only after the adapter has durably recorded and indexed the event.
 		let committedOps: FoldOp[] = [];

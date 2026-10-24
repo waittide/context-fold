@@ -69,6 +69,12 @@ export interface WireBlock {
 	/** The block's message carries non-text parts (e.g. an image) that linearize cannot see —
 	 *  folding it would silently drop them from the view, so it is never foldable. */
 	opaque?: boolean;
+	/**
+	 * thinking only: the provider attached a signature (or equivalent) to this reasoning block, so
+	 * the text and the signature must stay consistent on the way back. Replacing the text alone
+	 * produces a request the provider rejects. See core/turn-integrity.ts.
+	 */
+	signed?: boolean;
 }
 
 /** One fold instruction: replace block `id`'s content with `digestText` (carries the {#code} tag). */
@@ -86,6 +92,10 @@ export interface TextPart {
 export interface ThinkingPart {
 	type: "thinking";
 	thinking: string;
+	/** Providers that bind a reasoning block to a signature (Anthropic) or echo it back verbatim
+	 *  (DeepSeek `reasoning_content`) set this. A signed block's text cannot be rewritten alone. */
+	thinkingSignature?: string;
+	redacted?: boolean;
 }
 export interface ToolCallPart {
 	type: "toolCall";
@@ -181,7 +191,7 @@ export function linearize(messages: AgentMessage[]): WireBlock[] {
 		id: string,
 		kind: WireBlock["kind"],
 		text: string,
-		extra: Partial<Pick<WireBlock, "toolName" | "callId" | "model" | "isError" | "input" | "fullOutputPath" | "opaque">> = {},
+		extra: Partial<Pick<WireBlock, "toolName" | "callId" | "model" | "isError" | "input" | "fullOutputPath" | "opaque" | "signed">> = {},
 	) => {
 		if (!text && kind !== "tool_result") return; // drop empty non-results
 		out.push({ id, kind, turn, order: order++, text, tokens: tokensFor(text), ...extra });
@@ -197,8 +207,14 @@ export function linearize(messages: AgentMessage[]): WireBlock[] {
 			case "assistant": {
 				const parts = Array.isArray(m.content) ? (m.content as MessagePart[]) : [];
 				parts.forEach((b, j) => {
-					if (b?.type === "thinking") push(blockId(m, i, j), "thinking", (b as ThinkingPart).thinking || "", { model: m.model });
-					else if (b?.type === "text") push(blockId(m, i, j), "text", (b as TextPart).text || "", { model: m.model });
+					if (b?.type === "thinking") {
+						const part = b as ThinkingPart & { thinkingSignature?: unknown };
+						const signed = typeof part.thinkingSignature === "string" && part.thinkingSignature.length > 0;
+						push(blockId(m, i, j), "thinking", part.thinking || "", {
+							model: m.model,
+							...(signed ? { signed } : {}),
+						});
+					} else if (b?.type === "text") push(blockId(m, i, j), "text", (b as TextPart).text || "", { model: m.model });
 					else if (b?.type === "toolCall") {
 						const c = b as ToolCallPart;
 						if (c.id != null && c.arguments !== undefined) argsByCallId.set(c.id, c.arguments);
